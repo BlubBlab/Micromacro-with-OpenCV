@@ -27,6 +27,7 @@ int System_lua::regmod(lua_State *L)
 {
 	static const luaL_Reg _funcs[] = {
 		{"rest", System_lua::rest},
+		{"yield", System_lua::yield},
 		{"exec", System_lua::exec},
 		{"shellExec", System_lua::shellExec},
 		{"getClipboard", System_lua::getClipboard},
@@ -59,7 +60,17 @@ int System_lua::rest(lua_State *L)
 
 	return 0;
 }
+/*	system.yield()
+	Returns:	nil
 
+	Make the thread to give up its CPU time
+*/
+int System_lua::yield(lua_State *L)
+{
+	SwitchToThread();
+
+	return 0;
+}
 /*	system.exec(string cmd)
 	Returns:	string
 
@@ -75,13 +86,13 @@ int System_lua::exec(lua_State *L)
 	char buffer[1024];
 	const char *cmd = lua_tostring(L, 1);
 	FILE *file;
-	file = popen(cmd, "r");
+	file = _popen(cmd, "r");
 	if( !file )
 		return 0;
 
 	while( fgets(buffer, sizeof(buffer)-1, file) != NULL )
 		szResult += buffer;
-	pclose(file);
+	_pclose(file);
 
 	lua_pushstring(L, szResult.c_str());
 	return 1;
@@ -115,7 +126,7 @@ int System_lua::shellExec(lua_State *L)
 
 		if( strncmp(key, "fMask", len) == 0 )
 		{
-			sei.fMask = lua_tointeger(L, -1);
+			sei.fMask = (ULONG)lua_tointeger(L, -1);
 		}
 		else if( strncmp(key, "hwnd", len) == 0 )
 		{
@@ -139,7 +150,7 @@ int System_lua::shellExec(lua_State *L)
 		}
 		else if( strncmp(key, "nShow", len) == 0 )
 		{
-			sei.nShow = lua_tointeger(L, -1);
+			sei.nShow = (int)lua_tointeger(L, -1);
 		}
 		else if( strncmp(key, "hInstApp", len) == 0 )
 		{
@@ -159,7 +170,7 @@ int System_lua::shellExec(lua_State *L)
 		}
 		else if( strncmp(key, "dwHotKey", len) == 0 )
 		{
-			sei.dwHotKey = lua_tointeger(L, -1);
+			sei.dwHotKey = (DWORD)lua_tointeger(L, -1);
 		}
 		else if( strncmp(key, "hIcon", len) == 0 )
 		{

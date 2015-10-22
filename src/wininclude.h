@@ -23,7 +23,12 @@
 			#define MAX_PATH		PATH_MAX
 		#endif
 	#else
+		
+		#include <winsock2.h>		
+		//#define _WINSOCKAPI_    // stops windows.h including winsock.h
+		//#define _WINSOCK2API_
 		#include <windows.h>
+		
 		#include <psapi.h>
 		//#include <conio.h>
 		#include <lm.h>

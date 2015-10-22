@@ -18,6 +18,8 @@ MicroMacro::Event &MicroMacro::Event::operator=(const MicroMacro::Event &o)
 	idata2 = o.idata2;
 	idata3 = o.idata3;
 	msg = o.msg;
+	#ifdef NETWORKING_ENABLED
 	pSocket = o.pSocket;
+	#endif
 	return *this;
 }

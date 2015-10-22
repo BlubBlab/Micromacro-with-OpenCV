@@ -17,6 +17,7 @@
 	extern const char *CONFIG_FILENAME;
 	extern const char *CONFIG_DEFAULT_FILENAME;
 	extern const char *CONFVAR_MEMORY_STRING_BUFFER_SIZE;
+	extern const char *CONFVAR_MEMORY_WSTRING_BUFFER_SIZE;
 	extern const char *CONFVAR_LOG_DIRECTORY;
 	extern const char *CONFVAR_LOG_REMOVAL_DAYS;
 	extern const char *CONFVAR_SCRIPT_DIRECTORY;
@@ -26,6 +27,7 @@
 	extern const char *CONFVAR_RECV_QUEUE_SIZE;
 
 	extern const int CONFDEFAULT_MEMORY_STRING_BUFFER_SIZE;
+	extern const int CONFDEFAULT_MEMORY_WSTRING_BUFFER_SIZE;
 	extern const int CONFDEFAULT_LOG_REMOVAL_DAYS;
 	extern const char *CONFDEFAULT_LOG_DIRECTORY;
 	extern const char *CONFDEFAULT_SCRIPT_DIRECTORY;

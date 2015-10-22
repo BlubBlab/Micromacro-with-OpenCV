@@ -4,11 +4,11 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
 #include "mouse_lua.h"
 #include "error.h"
 #include "macro.h"
-
+#include <math.h>
 extern "C"
 {
 	#include <lua.h>
@@ -47,7 +47,10 @@ int Mouse_lua::regmod(lua_State *L)
 
 	return MicroMacro::ERR_OK;
 }
-
+//double round(double d)
+//{
+//  return floor(d + 0.5);
+//}
 /*	mouse.pressed(number vk)
 	Returns:	boolean
 
@@ -61,7 +64,7 @@ int Mouse_lua::pressed(lua_State *L)
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 
-	int vk = lua_tointeger(L, 1);
+	int vk = (int)lua_tointeger(L, 1);
 	if( vk <= VK_XBUTTON2 && vk != 0)
 		lua_pushboolean(L, Macro::instance()->getHid()->pressed(vk));
 	else
@@ -82,7 +85,7 @@ int Mouse_lua::released(lua_State *L)
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 
-	int vk = lua_tointeger(L, 1);
+	int vk = (int)lua_tointeger(L, 1);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		lua_pushboolean(L, Macro::instance()->getHid()->released(vk));
 	else
@@ -103,7 +106,7 @@ int Mouse_lua::isDown(lua_State *L)
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 
-	int vk = lua_tointeger(L, 1);
+	int vk = (int)lua_tointeger(L, 1);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		lua_pushboolean(L, Macro::instance()->getHid()->isDown(vk));
 	else
@@ -127,10 +130,10 @@ int Mouse_lua::press(lua_State *L)
 	if( top == 2 )
 		checkType(L, LT_BOOLEAN, 2);
 
-	int vk = lua_tointeger(L, 1);
-	bool async = true;
+	int vk = (int)lua_tointeger(L, 1);
+	BOOL async = true;
 	if( top == 2 )
-		async = lua_toboolean(L, 2);
+		async = (bool)lua_toboolean(L, 2);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		Macro::instance()->getHid()->press(vk, async);
 	return 0;
@@ -147,7 +150,7 @@ int Mouse_lua::hold(lua_State *L)
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 
-	int vk = lua_tointeger(L, 1);
+	int vk = (int)lua_tointeger(L, 1);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		Macro::instance()->getHid()->hold(vk);
 	return 0;
@@ -164,7 +167,7 @@ int Mouse_lua::release(lua_State *L)
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 
-	int vk = lua_tointeger(L, 1);
+	int vk = (int)lua_tointeger(L, 1);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		Macro::instance()->getHid()->release(vk);
 	return 0;
@@ -184,8 +187,8 @@ int Mouse_lua::move(lua_State *L)
 	checkType(L, LT_NUMBER, 1);
 	checkType(L, LT_NUMBER, 2);
 
-	int x = lua_tointeger(L, 1);
-	int y = lua_tointeger(L, 2);
+	int x = (int)lua_tointeger(L, 1);
+	int y = (int)lua_tointeger(L, 2);
 
 	INPUT inp;
 	inp.type = INPUT_MOUSE;
@@ -211,7 +214,7 @@ int Mouse_lua::wheelMove(lua_State *L)
 	if( lua_gettop(L) != 1 )
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
-	int delta = lua_tointeger(L, 1);
+	int delta = (int)lua_tointeger(L, 1);
 
 	INPUT inp;
 	inp.type = INPUT_MOUSE;
@@ -247,8 +250,8 @@ int Mouse_lua::setPosition(lua_State *L)
 	int y = (int)lua_tointeger(L, 2);
 
 	// Normalize coords to expected value
-	x = round(x * (65535/fScreenWidth));
-	y = round(y * (65535/fScreenHeight));
+	x = (int)round(x * (65535/fScreenWidth));
+	y = (int)round(y * (65535/fScreenHeight));
 
 	INPUT inp;
 	inp.type = INPUT_MOUSE;
@@ -327,10 +330,10 @@ int Mouse_lua::virtualPress(lua_State *L)
 		checkType(L, LT_BOOLEAN, 3);
 
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	int vk = lua_tointeger(L, 2);
-	bool async = true;
+	int vk = (int)lua_tointeger(L, 2);
+	BOOL async = true;
 	if( top == 3 )
-		async = lua_toboolean(L, 3);
+		async = (BOOL)lua_toboolean(L, 3);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		Macro::instance()->getHid()->virtualPress(hwnd, vk, async);
 	return 0;
@@ -351,7 +354,7 @@ int Mouse_lua::virtualHold(lua_State *L)
 	checkType(L, LT_NUMBER, 2);
 
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	int vk = lua_tointeger(L, 2);
+	int vk = (int)lua_tointeger(L, 2);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		Macro::instance()->getHid()->virtualHold(hwnd, vk);
 	return 0;
@@ -372,13 +375,13 @@ int Mouse_lua::virtualRelease(lua_State *L)
 	checkType(L, LT_NUMBER, 2);
 
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	int vk = lua_tointeger(L, 2);
+	int vk = (int)lua_tointeger(L, 2);
 	if( vk <= VK_XBUTTON2 && vk != 0 )
 		Macro::instance()->getHid()->virtualRelease(hwnd, vk);
 	return 0;
 }
 
-/*	mouse.virtualMove(number hwnd, number dx, number dy)
+/*	mouse.virtualMove(number dx, number dy)
 	Returns:	nil
 
 	Moves the virtual mouse cursor by dx, dy.
@@ -387,7 +390,7 @@ int Mouse_lua::virtualRelease(lua_State *L)
 */
 int Mouse_lua::virtualMove(lua_State *L)
 {
-	if( lua_gettop(L) != 3 )
+	if( lua_gettop(L) != 2 )
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 	checkType(L, LT_NUMBER, 2);
@@ -396,8 +399,8 @@ int Mouse_lua::virtualMove(lua_State *L)
 	int dx, dy;
 	int cx, cy;
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	dx = lua_tointeger(L, 2);
-	dy = lua_tointeger(L, 3);
+	dx = (int)lua_tointeger(L, 2);
+	dy = (int)lua_tointeger(L, 3);
 
 
 	// Update the virtual mouse's position
@@ -427,7 +430,7 @@ int Mouse_lua::virtualWheelMove(lua_State *L)
 	Macro::instance()->getHid()->getVirtualMousePos(mx, my);
 
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	int delta = lua_tointeger(L, 2);
+	int delta = (int)lua_tointeger(L, 2);
 	WPARAM wparam = MAKEWPARAM(0, delta);
 	LPARAM lparam = MAKELPARAM(mx, my);
 	PostMessage(hwnd, WM_MOUSEWHEEL, wparam, lparam);
@@ -452,8 +455,8 @@ int Mouse_lua::setVirtualPosition(lua_State *L)
 
 	unsigned int dx, dy;
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	dx = lua_tointeger(L, 2);
-	dy = lua_tointeger(L, 3);
+	dx = (unsigned int)lua_tointeger(L, 2);
+	dy = (unsigned int)lua_tointeger(L, 3);
 	Macro::instance()->getHid()->setVirtualMousePos(dx, dy);
 
 	// Post a message about its movement

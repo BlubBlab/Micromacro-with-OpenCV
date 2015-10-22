@@ -45,7 +45,21 @@ size_t strlcat(char *dest, const char *src, size_t max_len)
 
 	return strlen(dest) - start_len;
 }
+size_t wstrlcpy(wchar_t *dest, const wchar_t* src, size_t max_len)
+{
+	size_t src_len = wcslen(src);
+	size_t cpy_len = 0;
 
+	if( src_len > max_len )
+		cpy_len = max_len;
+	else
+		cpy_len = src_len;
+
+	wcsncpy(dest, src, cpy_len);
+	dest[cpy_len] = 0; // Ensure NULL-terminator
+
+	return wcslen(dest);
+}
 // I think you get the pattern by now. Like snprintf(), ensures NULL-terminator
 int slprintf(char *dest, size_t size, const char *fmt, ...)
 {
@@ -81,10 +95,10 @@ int wildfind(const std::string &format, const std::string &checkstring)
 	if( checkstring.length() == 0 || format.length() == 0 )
 		return 0;
 
-	unsigned int format_pos = 0;
-	unsigned int checkstring_pos = 0;
-	unsigned int mp = 0;
-	unsigned int cp = 0;
+	size_t format_pos = 0;
+	size_t checkstring_pos = 0;
+	size_t mp = 0;
+	size_t cp = 0;
 
 	while( format.at(format_pos) != '*' && format.at(format_pos) != '?' )
 	{
@@ -168,7 +182,7 @@ int wildfind(const std::string &format, const std::string &checkstring)
 
 void securezero(void *addr, size_t len)
 {
-	for(unsigned int i = 0; i < len; i++)
+	for(size_t i = 0; i < len; i++)
 		*((char*)addr + i) = 0;
 }
 

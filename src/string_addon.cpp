@@ -8,12 +8,14 @@
 #include "string_addon.h"
 #include "error.h"
 #include "rng.h"
-
+#include <locale>
+#include <vector>
+#include <iostream>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <string.h>
-
+#include <functional>
 #include "wininclude.h"
 
 extern "C"
@@ -61,7 +63,7 @@ int String_addon::explode(lua_State *L)
 	const char *delim = lua_tolstring(L, 2, &delimLen);
 
 	lua_newtable(L);
-	unsigned int key = 1;
+	size_t key = 1;
 	while(true)
 	{
 		std::size_t found = str.find(delim);
@@ -93,9 +95,9 @@ int String_addon::trim(lua_State *L)
 	std::string str = (char *)lua_tostring(L, 1);
 
 	// Strip spaces from both ends
-	str.erase(str.begin(), std::find_if(str.begin(), str.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-	str.erase(std::find_if(str.rbegin(), str.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), str.end());
-
+	//str.erase(str.begin(), std::find_if(str.begin(), str.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+	//str.erase(std::find_if(str.rbegin(), str.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), str.end());
+	str.erase(str.find_last_not_of(" \n\r\t")+1);
 	lua_pushstring(L, str.c_str());
 	return 1;
 }
@@ -130,7 +132,7 @@ int String_addon::random(lua_State *L)
 	static char numbers[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 0};
 
 	std::string type = (char *)lua_tostring(L, 1);
-	unsigned int len = lua_tointeger(L, 2);
+	size_t len = (size_t)lua_tointeger(L, 2);
 	char *validChars = NULL;
 
 	if( type == "alnum" )
@@ -141,10 +143,10 @@ int String_addon::random(lua_State *L)
 		validChars = numbers;
 	else // Default alnum
 		validChars = alnum;
-
-	unsigned int validCharsLen = strlen(validChars);
+	// shoudn't be longer than usigned int
+	size_t validCharsLen = strlen(validChars);
 	std::string buff = "";
-	for(unsigned int i = 0; i < len; i++)
+	for(size_t i = 0; i < len; i++)
 		buff += validChars[::random(0, validCharsLen)];
 
 	lua_pushstring(L, buff.c_str());

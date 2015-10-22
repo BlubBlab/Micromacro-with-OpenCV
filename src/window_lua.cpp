@@ -13,7 +13,7 @@
 #include "macro.h"
 #include "luatypes.h"
 #include "types.h"
-#include "mathl.h"
+#include "logger.h"
 
 extern "C"
 {
@@ -410,7 +410,7 @@ int Window_lua::setTitle(lua_State *L)
 	if( hwnd == Macro::instance()->getAppHwnd() )
 		success = SetConsoleTitle(title);
 	else
-		success = SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)title);
+		success = (int)SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)title);
 
 	if( !success )
 	{ // Throw error
@@ -526,21 +526,21 @@ int Window_lua::setRect(lua_State *L)
     wp.length = sizeof(WINDOWPLACEMENT);
     GetWindowPlacement(hwnd, &wp);
 
-	int origLeft = wp.rcNormalPosition.left;
-	int origTop = wp.rcNormalPosition.top;
-
-	wp.rcNormalPosition.left = lua_tointeger(L, 2);
-	wp.rcNormalPosition.top = lua_tointeger(L, 3);
+	LONG origLeft = wp.rcNormalPosition.left;
+	LONG origTop = wp.rcNormalPosition.top;
+	
+	wp.rcNormalPosition.left = (LONG)lua_tointeger(L, 2);
+	wp.rcNormalPosition.top = (LONG)lua_tointeger(L, 3);
 	if( lua_isnumber(L, 4) )
-		wp.rcNormalPosition.right = lua_tointeger(L, 4);
+		wp.rcNormalPosition.right = (LONG)lua_tointeger(L, 4);
 	else
 		wp.rcNormalPosition.right = wp.rcNormalPosition.right - origLeft;
 	if( lua_isnumber(L, 5) )
-		wp.rcNormalPosition.bottom = lua_tointeger(L, 5);
+		wp.rcNormalPosition.bottom = (LONG)lua_tointeger(L, 5);
 	else
 		wp.rcNormalPosition.bottom = wp.rcNormalPosition.bottom - origTop;
 
-	MoveWindow(hwnd, wp.rcNormalPosition.left, wp.rcNormalPosition.top, wp.rcNormalPosition.right, wp.rcNormalPosition.bottom, false);
+	MoveWindow(hwnd ,(int)wp.rcNormalPosition.left, (int)wp.rcNormalPosition.top, (int)wp.rcNormalPosition.right, (int)wp.rcNormalPosition.bottom, false);
 	return 0;
 }
 
@@ -608,21 +608,21 @@ int Window_lua::setClientRect(lua_State *L)
 	winrect.left = 0; winrect.top = 0;
 	int origLeft = winrect.left;
 	//int origTop = winrect.top;
-	int newLeft = lua_tointeger(L, 2);
-	int newTop = lua_tointeger(L, 3);
+	int newLeft = (int)lua_tointeger(L, 2);
+	int newTop = (int)lua_tointeger(L, 3);
 	if( lua_isnumber(L, 4) )
-		winrect.right = lua_tointeger(L, 4);
+		winrect.right = (LONG)lua_tointeger(L, 4);
 	else
 		winrect.right = winrect.right + (newLeft-origLeft);
 	if( lua_isnumber(L, 5) )
-		winrect.bottom = lua_tointeger(L, 5);
+		winrect.bottom = (LONG)lua_tointeger(L, 5);
 	else
 		winrect.bottom = winrect.bottom;
 
 
 	// Adjust from client coordinates to screen
-    DWORD dwStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
-    DWORD dwExStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    DWORD dwStyle = (DWORD)GetWindowLongPtr(hwnd, GWL_STYLE);
+    DWORD dwExStyle = (DWORD)GetWindowLongPtr(hwnd, GWL_EXSTYLE);
     HMENU menu = GetMenu(hwnd);
 	AdjustWindowRectEx(&winrect, dwStyle, menu != NULL, dwExStyle);
 
@@ -651,7 +651,7 @@ int Window_lua::show(lua_State *L)
 	checkType(L, LT_NUMBER, 2);
 
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	int cmd = lua_tointeger(L, 2);
+	int cmd = (int)lua_tointeger(L, 2);
 
 	if( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -700,7 +700,7 @@ int Window_lua::flash(lua_State *L)
 	checkType(L, LT_NUMBER, 2);
 
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	int count = lua_tointeger(L, 2);
+	int count = (int)lua_tointeger(L, 2);
 
 	FLASHWINFO fwi;
 	fwi.hwnd = hwnd;
@@ -781,8 +781,8 @@ int Window_lua::getPixel(lua_State *L)
 
 	POINT point;
 	HWND hwnd = (HWND)lua_tointeger(L, 1);
-	point.x = lua_tointeger(L, 2);
-	point.y = lua_tointeger(L, 3);
+	point.x = (LONG)lua_tointeger(L, 2);
+	point.y = (LONG)lua_tointeger(L, 3);
 
 	HDC hdc = GetDC(NULL); // Open DC to desktop (not specified window)
 	if( !hdc )
@@ -794,7 +794,7 @@ int Window_lua::getPixel(lua_State *L)
 	}
 
 	ClientToScreen(hwnd, &point);
-	COLORREF ref = GetPixel(hdc, point.x, point.y);
+	COLORREF ref = GetPixel(hdc, (int)point.x, (int)point.y);
 	ReleaseDC(hwnd, hdc);
 
 	lua_pushinteger(L, GetRValue(ref));
@@ -834,12 +834,8 @@ int Window_lua::pixelSearch(lua_State *L)
 	checkType(L, LT_NUMBER, 6); // y1
 	checkType(L, LT_NUMBER, 7); // x2
 	checkType(L, LT_NUMBER, 8); // y2
-
-	if( top >= 9 )
-		checkType(L, LT_NUMBER, 9); // accuracy
-
-	if( top >= 10 )
-		checkType(L, LT_NUMBER, 10); // step
+	checkType(L, LT_NUMBER, 9); // accuracy
+	checkType(L, LT_NUMBER, 10); // step
 
 	POINT retval;
 	POINT offset;
@@ -854,19 +850,19 @@ int Window_lua::pixelSearch(lua_State *L)
 	bool reversey;
 
 	hwnd = (HWND)lua_tointeger(L, 1);
-	r1 = lua_tointeger(L, 2);
-	g1 = lua_tointeger(L, 3);
-	b1 = lua_tointeger(L, 4);
-	x1 = lua_tointeger(L, 5);
-	y1 = lua_tointeger(L, 6);
-	x2 = lua_tointeger(L, 7);
-	y2 = lua_tointeger(L, 8);
+	r1 = (int)lua_tointeger(L, 2);
+	g1 = (int)lua_tointeger(L, 3);
+	b1 = (int)lua_tointeger(L, 4);
+	x1 = (int)lua_tointeger(L, 5);
+	y1 = (int)lua_tointeger(L, 6);
+	x2 = (int)lua_tointeger(L, 7);
+	y2 = (int)lua_tointeger(L, 8);
 
 	if( top >= 9 )
-		accuracy = lua_tointeger(L, 9);
+		accuracy = (int)lua_tointeger(L, 9);
 
 	if( top >= 10 )
-		step = lua_tointeger(L, 10);
+		step = (int)lua_tointeger(L, 10);
 
 	if( step < 1 ) step = 1;
 	reversex = (x2 < x1);
@@ -888,11 +884,6 @@ int Window_lua::pixelSearch(lua_State *L)
 	offset.y = offset.y - winRect.top;
 	GetClientRect(hwnd, &clientRect);
 
-	// Ensure we're not attempting to work outside the client rect
-	x1 = clamp(x1, 0, (int)clientRect.right);
-	y1 = clamp(y1, 0, (int)clientRect.bottom);
-	x2 = clamp(x2, 0, (int)clientRect.right);
-	y2 = clamp(y2, 0, (int)clientRect.bottom);
 
 	// Grab a copy of the target window as a bitmap
 	HDC hdcScreen = GetDC(NULL);
@@ -903,9 +894,15 @@ int Window_lua::pixelSearch(lua_State *L)
 	// Make sure we will even be able to handle it
 	if( IsIconic(hwnd) || hdcScreen == NULL || tmpHdc == NULL || hBmp == NULL )
 	{ // Throw an error
-		DeleteDC(tmpHdc);
-		DeleteObject(hBmp);
-		ReleaseDC(NULL, hdcScreen);
+		if ( tmpHdc != NULL ) {
+			DeleteDC( tmpHdc );
+		}
+		if ( hBmp != NULL ) {
+			DeleteObject( hBmp );
+		}
+		if ( hdcScreen != NULL ) {
+			ReleaseDC( NULL, hdcScreen );
+		}
 		int errCode = GetLastError();
 		pushLuaErrorEvent(L, "Unable to grab screenshot of target window. Error code %i (%s)",
 			errCode, getWindowsErrorString(errCode).c_str());
@@ -913,10 +910,10 @@ int Window_lua::pixelSearch(lua_State *L)
 	}
 
 	// Get info from the screenshot
-	HGDIOBJ origSelectedObject = SelectObject(tmpHdc, hBmp);
+	SelectObject(tmpHdc, hBmp);
 	int pw = PrintWindow(hwnd, tmpHdc, PW_CLIENTONLY);
-	int biWidth = clientRect.right;// - clientRect.left;
-	int biHeight = clientRect.bottom;// - clientRect.top;
+	int biWidth = clientRect.right - clientRect.left;
+	int biHeight = clientRect.bottom - clientRect.top;
 	BITMAPINFO bmpInfo;
 	bmpInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	bmpInfo.bmiHeader.biWidth = biWidth;
@@ -927,14 +924,8 @@ int Window_lua::pixelSearch(lua_State *L)
 	bmpInfo.bmiHeader.biSizeImage = 0;
 
 	BITMAP obmp;
-	int bytes = GetObject(hBmp, sizeof(obmp), &obmp);
-
-	// Switch back to original object before we call GetDIBits! (important)
-	SelectObject(tmpHdc, origSelectedObject);
-
-
-	int pixelsBound = (biHeight+1)*biWidth;
-	RGBQUAD *_pixels = new RGBQUAD[pixelsBound];
+	GetObject(hBmp, sizeof(obmp), &obmp);
+	RGBQUAD *_pixels = new RGBQUAD[(biHeight+1)*biWidth];
 	int scanlines = GetDIBits(tmpHdc, hBmp, 0, biHeight, _pixels, &bmpInfo, DIB_RGB_COLORS);
 
 	if( pw == 0 || scanlines == 0 || scanlines == ERROR_INVALID_PARAMETER )
@@ -959,6 +950,7 @@ int Window_lua::pixelSearch(lua_State *L)
 	int x, y;
 	retval.x = 0; retval.y = 0;
 	bool found = false;
+
 	for(int i = 0; i <= steps_y; i++)
 	{
 		for(int v = 0; v <= steps_x; v++)
@@ -972,20 +964,19 @@ int Window_lua::pixelSearch(lua_State *L)
 			else
 				y = y2 + height - i*step;
 
-			if( x > (offset.x + clientRect.right/*-clientRect.left*/) )
+			if( x > (offset.x + clientRect.right-clientRect.left) )
 			{
 				x = 0;
 				y++;
 				continue;
 			}
-			if( y > (clientRect.bottom/*-clientRect.top*/) )
+			if( y > (clientRect.bottom-clientRect.top) )
 			{
 				i = steps_y;
 				break;
 			}
 
-			int index = (biHeight-y)*biWidth + x;
-			RGBQUAD rgba = _pixels[index];
+			RGBQUAD rgba = _pixels[(biHeight-(y+1))*biWidth + x];
 
 			r2 = rgba.rgbRed;
 			g2 = rgba.rgbGreen;

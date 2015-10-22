@@ -4,7 +4,7 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
 #include "filesystem_lua.h"
 #include "filesystem.h"
 #include "error.h"
@@ -14,13 +14,20 @@
 
 extern "C"
 {
-	#include <lua.h>
-	#include <lauxlib.h>
-	#include <lualib.h>
+	#include "lua.h"
+	#include "lauxlib.h"
+	#include "lualib.h"
 }
 
 #include <sys/stat.h>
 
+BOOL DirectoryExists(const char* dirName) {
+  DWORD attribs = ::GetFileAttributesA(dirName);
+  if (attribs == INVALID_FILE_ATTRIBUTES) {
+    return false;
+  }
+  return (attribs & FILE_ATTRIBUTE_DIRECTORY);
+}
 int Filesystem_lua::regmod(lua_State *L)
 {
 	static const luaL_Reg _funcs[] = {
@@ -138,9 +145,9 @@ int Filesystem_lua::getDirectory(lua_State *L)
 		return 0;
 
 	lua_newtable(L);
-	for(unsigned int i = 0; i < files.size(); i++)
+	for(size_t i = 0; i < files.size(); i++)
 	{
-		lua_pushnumber(L, i+1); // Key
+		lua_pushinteger(L, i+1); // Key
 		lua_pushstring(L, files.at(i).c_str()); // Value
 		lua_settable(L, -3);
 	}
@@ -159,9 +166,9 @@ int Filesystem_lua::isDirectory(lua_State *L)
 		wrongArgs(L);
 	const char *path = lua_tostring(L, 1);
 
-	struct stat dstat;
-	stat(path, &dstat);
-	bool isDir = S_ISDIR(dstat.st_mode);
+	//struct stat dstat;
+	//stat(path, &dstat);
+	BOOL isDir = DirectoryExists(path);
 
 	lua_pushboolean(L, isDir);
 	return 1;

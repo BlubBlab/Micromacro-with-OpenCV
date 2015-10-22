@@ -8,9 +8,9 @@
 #ifndef SOCKET_LUA_H
 #define SOCKET_LUA_H
 	#ifdef NETWORKING_ENABLED
-
-	#include <winsock2.h>
 	#include "wininclude.h"
+	//#include <winsock2.h>
+	#include "types.h"
 	#include "mutex.h"
 	#include <vector>
 

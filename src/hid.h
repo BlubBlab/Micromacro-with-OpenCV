@@ -40,8 +40,8 @@
 			KeyHeldQueue keyHeldQueue;
 			int vMouseX, vMouseY;
 			bool gamepadAvailable[GAMEPADS];
-			unsigned int gamepadCount;
-			unsigned int gamepadMaxIndex;
+			size_t gamepadCount;
+			size_t gamepadMaxIndex;
 
 		public:
 			int init();
@@ -82,8 +82,8 @@
 			DWORD joyAxis(int, int);
 			bool joyAxisChanged(int, int);
 
-			unsigned int getGamepadCount();
-			unsigned int getGamepadMaxIndex();
+			size_t getGamepadCount();
+			size_t getGamepadMaxIndex();
 			bool gamepadIsAvailable(int);
 			void repollGamepadMaxIndex();
 

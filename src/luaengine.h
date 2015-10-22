@@ -44,7 +44,7 @@
 			std::string basePath;
 			std::string lastErrorMsg;
 			TimeType lastTimestamp;			// Holds the timestamp so we can compute delta time
-			float fDeltaTime;				// Holds the time elapsed between last cycle and current logic cycle
+			double fDeltaTime;				// Holds the time elapsed between last cycle and current logic cycle
 			int keyHookErrorState;
 
 		public:
@@ -62,7 +62,7 @@
 			int runEvent(MicroMacro::Event &);
 			int dispatchWindowsMessages();
 
-			float getDeltaTime();
+			double getDeltaTime();
 			std::string getLastErrorMessage();
 			void setLastErrorMessage(const char *);
 			lua_State *getLuaState();

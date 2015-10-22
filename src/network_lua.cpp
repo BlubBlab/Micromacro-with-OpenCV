@@ -4,7 +4,7 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#define NETWORKING_ENABLED
 #ifdef NETWORKING_ENABLED
 
 #include "network_lua.h"
@@ -14,6 +14,7 @@
 #include "types.h"
 #include "logger.h"
 #include "socket_lua.h"
+#include <iostream>
 
 extern "C"
 {

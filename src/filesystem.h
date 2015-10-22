@@ -20,7 +20,7 @@
 	bool fileExists(const char *);
 	bool copyFile(const char *, const char *);
 	std::vector<std::string> getDirectory(std::string, std::string = "");
-	unsigned int filetimeDelta(FILETIME *, FILETIME *);
+	size_t filetimeDelta(FILETIME *, FILETIME *);
 	std::string fixSlashes(std::string, int);
 	std::string getFileName(std::string);
 	std::string getFilePath(std::string, bool);

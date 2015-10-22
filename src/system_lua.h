@@ -17,6 +17,7 @@
 	{
 		protected:
 			static int rest(lua_State *);
+			static int yield(lua_State *);
 			static int exec(lua_State *);
 			static int shellExec(lua_State *);
 			static int getClipboard(lua_State *);

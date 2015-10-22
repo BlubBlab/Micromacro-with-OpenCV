@@ -161,7 +161,7 @@ int Table_addon::print(lua_State *L)
 	int depth = 0;
 	if( lua_gettop(L) >= 2 && lua_isnumber(L, -1) )
 	{
-		depth = lua_tointeger(L, -1);
+		depth = (int)lua_tointeger(L, -1);
 		lua_pop(L, 1); // We can pop depth; don't need it
 	}
 	else
@@ -182,7 +182,7 @@ int Table_addon::print(lua_State *L)
 		{
 			// We need to convert this to a string, but DO NOT CALL lua_tostring()!
 			// Doing so will modify the key on stack and confuse lua_next()
-			int index = lua_tointeger(L, -2);
+			int index = (int)lua_tointeger(L, -2);
 			char buffer[32];
 			slprintf(buffer, sizeof(buffer)-1, "%d", index);
 			key = buffer;

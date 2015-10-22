@@ -11,7 +11,7 @@
 	#define NCURSES_MODULE_NAME				"ncurses"
 	#define MAX_NCURSES_HISTORY_LINES		10
 
-	#include <ncursesw/ncurses.h>
+	#include "curses.h"
 	#include <vector>
 	#include <string>
 
@@ -23,7 +23,7 @@
 			static bool initialized;
 			static const char *stdscr_name;
 			static std::vector<std::string> history;
-			static unsigned int historyIndex;
+			static size_t historyIndex;
 
 			static void flush(WINDOW *);
 			static void readline(WINDOW *, char *, size_t);

@@ -4,6 +4,8 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
+#define NETWORKING_ENABLED
+using namespace std;
 
 #ifndef TYPES_H
 #define TYPES_H
@@ -13,13 +15,15 @@
 	#include <queue>
 	#include "wininclude.h"
 	#include "mutex.h"
+	#include "event.h"
+	#include <stdint.h>
 
 	namespace MicroMacro
 	{
 
 		enum Multivar_type{VT_NUMBER, VT_STRING, VT_NIL};
 		enum BatchJob_type{MEM_BYTE, MEM_UBYTE, MEM_SHORT, MEM_USHORT, MEM_INT, MEM_UINT,
-			MEM_INT64, MEM_UINT64, MEM_FLOAT, MEM_DOUBLE, MEM_STRING, MEM_SKIP};
+			MEM_INT64, MEM_UINT64, MEM_FLOAT, MEM_DOUBLE,MEM_LDOUBLE, MEM_STRING,MEM_USTRING, MEM_SKIP};
 
 		typedef unsigned int ALuint;
 		class Event;
@@ -58,7 +62,7 @@
 		/* Describes a memory read job (type and length) */
 		struct BatchJob
 		{
-			unsigned int count;
+			size_t count;
 			BatchJob_type type;
 
 			BatchJob &operator=(const BatchJob &);
@@ -80,7 +84,7 @@
 		};
 
 		template <class T>
-		T getChunkVariable(MemoryChunk *pChunk, unsigned int offset, int &err)
+		T getChunkVariable(MemoryChunk *pChunk, int64_t offset, int &err)
 		{
 			err = 0;
 			if( (offset+sizeof(T)) > pChunk->size )
@@ -92,7 +96,7 @@
 			return *(T*)(pChunk->data+offset);
 		}
 
-		std::string getChunkString(MemoryChunk *pChunk, size_t offset, size_t length, int &err);
+		std::string getChunkString(MemoryChunk *pChunk, int64_t offset, uint64_t length, int &err);
 
 		struct Vector3d
 		{

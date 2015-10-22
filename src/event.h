@@ -4,7 +4,7 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#define NETWORKING_ENABLED
 #ifndef EVENT_H
 #define EVENT_H
 

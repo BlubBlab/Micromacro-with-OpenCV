@@ -4,17 +4,21 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+/*
+for 64-bit see;
+http://stackoverflow.com/questions/13158501/specifying-64-bit-unsigned-integer-literals-on-64-bit-data-models
+answer #4
+*/
 #include "memorychunk_lua.h"
 #include "error.h"
 #include "strl.h"
 #include "types.h"
-
+#include <stdint.h>
 extern "C"
 {
-	#include <lua.h>
-	#include <lauxlib.h>
-	#include <lualib.h>
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
 }
 
 const char *LuaType::metatable_memorychunk = "memorychunk";
@@ -95,7 +99,7 @@ int MemoryChunk_lua::getAddress(lua_State *L)
 	checkType(L, LT_USERDATA, 1);
 
 	MemoryChunk *pChunk = static_cast<MemoryChunk *>(lua_touserdata(L, 1));
-	lua_pushinteger(L, pChunk->address);
+	lua_pushinteger(L, (lua_Unsigned)pChunk->address);
 
 	return 1;
 }
@@ -119,7 +123,7 @@ int MemoryChunk_lua::getData(lua_State *L)
 
 	MemoryChunk *pChunk = static_cast<MemoryChunk *>(lua_touserdata(L, 1));
 	std::string type = lua_tostring(L, 2);
-	size_t offset = lua_tointeger(L, 3);
+	int64_t offset = (size_t)lua_tointeger(L, 3);
 	int err = 0;
 
 	if( type == "byte" ) {
@@ -141,11 +145,11 @@ int MemoryChunk_lua::getData(lua_State *L)
 		unsigned int data = getChunkVariable<unsigned int>(pChunk, offset, err);
 		lua_pushinteger(L, data);
 	} else if( type == "int64" ) {
-		long long data = getChunkVariable<long long>(pChunk, offset, err);
+		int64_t data = getChunkVariable<int64_t>(pChunk, offset, err);
 		lua_pushinteger(L, data);
 	} else if( type == "uint64" ) {
-		unsigned long long data = getChunkVariable<unsigned long long>(pChunk, offset, err);
-		lua_pushinteger(L, data);
+		uint64_t data = getChunkVariable<uint64_t>(pChunk, offset, err);
+		lua_pushinteger(L, (lua_Unsigned)data);
 	} else if( type == "float" ) {
 		float data = getChunkVariable<float>(pChunk, offset, err);
 		lua_pushnumber(L, data);
@@ -154,7 +158,7 @@ int MemoryChunk_lua::getData(lua_State *L)
 		lua_pushnumber(L, data);
 	} else if( type == "string" ) {
 		checkType(L, LT_NUMBER, 4);
-		unsigned int length = lua_tointeger(L, 4);
+		size_t length = (size_t)lua_tointeger(L, 4);
 		std::string data = getChunkString(pChunk, offset, length, err);
 		lua_pushstring(L, data.c_str());
 	} else

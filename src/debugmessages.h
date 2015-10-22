@@ -9,9 +9,9 @@
 #define DEBUGMESSAGES_H
 
 	#ifdef DISPLAY_DEBUG_MESSAGES
-		#define debugMessage(fmt, args...)		debugMessageReal(__FILE__, __LINE__, fmt, ##args)
+		#define debugMessage(fmt, ...)		debugMessageReal(__FILE__, __LINE__, fmt, ##args)
 	#else
-		#define debugMessage(fmt, args...)
+		#define debugMessage(fmt, ...)
 	#endif
 
 	void debugMessageReal(const char *, int, const char *, ...);

@@ -5,7 +5,7 @@
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
 
-#include <ncursesw/ncurses.h>
+#include "curses.h"
 #include "luatypes.h"
 #include "types.h"
 #include "error.h"
@@ -25,9 +25,9 @@ extern "C"
 	#include <lualib.h>
 }
 
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alut.h>
+#include "AL/al.h"
+#include "AL/alc.h"
+#include "AL/alut.h"
 
 namespace LuaType
 {

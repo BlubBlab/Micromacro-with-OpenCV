@@ -1,9 +1,13 @@
 /******************************************************************************
-	Project: 	MicroMacro
-	Author: 	SolarStrike Software
-	URL:		www.solarstrike.net
-	License:	Modified BSD (see license.txt)
+Project: 	MicroMacro
+Author: 	SolarStrike Software
+URL:		www.solarstrike.net
+License:	Modified BSD (see license.txt)
 ******************************************************************************/
+#pragma warning( disable : 4800)
+#define  AUDIO_ENABLED
+#define NETWORKING_ENABLED
+//#define _WINSOCKAPI_ 
 
 #include "wininclude.h"		// Be sure to include this *before* ncurses!
 #include <stdio.h>
@@ -13,8 +17,9 @@
 #include <queue>
 #include <time.h>
 #include <iostream>
-#include <conio.h>
+//#include <conio.h>
 #include <Shlwapi.h>
+#include <Lm.h>
 
 #include "macro.h"
 #include "ncurses_lua.h"
@@ -32,15 +37,15 @@
 
 extern "C"
 {
-	#include <lua.h>
-	#include <lauxlib.h>
-	#include <lualib.h>
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 }
 
 #include "debugmessages.h"
 
 const int GAMEPAD_REPOLL_SECONDS = 10;
-char baseDirectory[MAX_PATH+1];
+char baseDirectory[MAX_PATH+50];
 std::string previousScript;
 
 std::string scriptGUIDialog(std::string);
@@ -53,7 +58,7 @@ std::string getConfigString(lua_State *, const char *, std::string);
 int loadConfig(const char *);
 void printStdHead();
 void openLog();
-void deleteOldLogs(const char *, unsigned int);
+void deleteOldLogs(const char *, size_t);
 void clearCliScreen();
 static BOOL WINAPI consoleControlCallback(DWORD);
 
@@ -62,8 +67,8 @@ WSADATA wsadata;
 #endif
 
 
-INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int nShow)
-//int main(int argc, char **argv)			// See notes below
+//INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int nShow)
+int main(int argc, char **argv)			// See notes below
 {
 	/* We emulate the standard C/C++ main() function in this way.
 		This code exists to keep compatibility simple.
@@ -71,13 +76,13 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 		If you simply comment these lines out and restore main()
 		declaration to "normal," you're good to go.
 	*/
-	int argc = 1;
-	char *argv[2];
+	//argc = 1;
+//	char *argv[2];
 
 	char filename[MAX_PATH];
 	GetModuleFileName( NULL, filename, MAX_PATH );
 	argv[0] = filename;
-	argv[1] = cmdLine;
+	//argv[1] = cmdLine;
 	/* END: main() compatibility */
 
 
@@ -85,6 +90,7 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 	SetConsoleCtrlHandler(consoleControlCallback, true);
 	printStdHead(); // Intro text output
 
+	
 	// Extract MicroMacro's base path from argv[0]
 	GetFullPathName(argv[0], MAX_PATH, baseDirectory, NULL);
 	strlcpy(baseDirectory,
@@ -141,8 +147,9 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 	openLog();
 
 	{ // Ensure scripts directory exists
-		const char *scriptsDir = Macro::instance()->getSettings()->getString(
-			CONFVAR_SCRIPT_DIRECTORY, CONFDEFAULT_SCRIPT_DIRECTORY).c_str();
+		 std::string buffer = Macro::instance()->getSettings()->getString(
+			CONFVAR_SCRIPT_DIRECTORY, CONFDEFAULT_SCRIPT_DIRECTORY);
+		const char *scriptsDir = buffer.c_str();
 		std::string scriptsFullPath = "";
 		if( PathIsRelative(scriptsDir) )
 		{
@@ -191,9 +198,9 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 
 		{ /* Reset window title */
 			char title[1024];
-			char basicTitle[64];
+			char basicTitle[128];
 			EncString::reveal(basicTitle, sizeof(basicTitle), EncString::basicTitle);
-			slprintf(title, sizeof(title)-1, basicTitle, AutoVersion::MAJOR, AutoVersion::MINOR, AutoVersion::BUILD);
+			slprintf(title, sizeof(title)-1, basicTitle, AutoVersion::MAJOR, AutoVersion::MINOR, AutoVersion::BUILD,AutoVersion::BUILD_SUB);
 			SendMessage(Macro::instance()->getAppHwnd(), WM_SETTEXT, (WPARAM)0, (LPARAM)title);
 
 			// Once set, we forcefully flush it from the buffers
@@ -245,15 +252,15 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			#else
 				const char *bits = "x86";
 			#endif
-			printf("Version %ld.%ld.%ld%s revision %ld %s, built on %s-%s-%s\n%s\n\n",
-				AutoVersion::MAJOR, AutoVersion::MINOR, AutoVersion::BUILD,
+			printf("Version with OpenCV %ld.%ld.%ld.%ld%s revision %ld %s, built on %s-%s-%s\n%s\n\n",
+				AutoVersion::MAJOR, AutoVersion::MINOR, AutoVersion::BUILD,AutoVersion::BUILD_SUB,
 				AutoVersion::STATUS_SHORT, AutoVersion::REVISION, bits,
 				AutoVersion::YEAR, AutoVersion::MONTH, AutoVersion::DATE,
 				LUA_VERSION);
 			continue;
 		} else if( args[0] == "exec" )
 		{
-			int argc = args.size();
+			size_t argc = args.size();
 			if( argc <= 1 ) // If they didn't actually give us a command...
 			{
 				printf("\nEntering interactive mode. Enter 'exit' to quit.\n");
@@ -357,7 +364,7 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			LuaEngine *E = Macro::instance()->getEngine();
 
 			// Reset text color (just in case)
-			SetConsoleTextAttribute(Macro::instance()->getAppHandle(), Macro::instance()->getConsoleDefaultAttributes());
+			SetConsoleTextAttribute(Macro::instance()->getAppHandle(), (WORD)Macro::instance()->getConsoleDefaultAttributes());
 
 			char buffer[1024];
 			slprintf(buffer, sizeof(buffer)-1, "Failed to run init function, err code: %d (%s)\n%s\n",
@@ -413,7 +420,7 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 				phid->isDown(VK_MENU))) ) // Global CTRL SHIFT ALT L
 			{
 				// Reset text color (just in case)
-				SetConsoleTextAttribute(Macro::instance()->getAppHandle(), Macro::instance()->getConsoleDefaultAttributes());
+				SetConsoleTextAttribute(Macro::instance()->getAppHandle(), (WORD)Macro::instance()->getConsoleDefaultAttributes());
 
 				printf("\nScript forcibly terminated.\n");
 				break;
@@ -426,7 +433,7 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 				LuaEngine *E = Macro::instance()->getEngine();
 
 				// Reset text color (just in case)
-				SetConsoleTextAttribute(Macro::instance()->getAppHandle(), Macro::instance()->getConsoleDefaultAttributes());
+				SetConsoleTextAttribute(Macro::instance()->getAppHandle(), (WORD)Macro::instance()->getConsoleDefaultAttributes());
 
 				char buffer[1024];
 				slprintf(buffer, sizeof(buffer)-1, "Failed to run event function, err code: %d (%s)\n%s\n",
@@ -454,7 +461,7 @@ INT WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			if( runState == MicroMacro::ERR_CLOSE )
 			{ // Script requested to end
 				// Reset text color (just in case)
-				SetConsoleTextAttribute(Macro::instance()->getAppHandle(), Macro::instance()->getConsoleDefaultAttributes());
+				SetConsoleTextAttribute(Macro::instance()->getAppHandle(), (WORD)Macro::instance()->getConsoleDefaultAttributes());
 
 				printf("\nScript requested termination.\n");
 				break;
@@ -542,8 +549,8 @@ std::string scriptGUIDialog(std::string defaultFilename)
 	strlcpy(fileBuffer, getFileName(defaultFilename).c_str(), MAX_PATH);
 	if( ::getFilePath(defaultFilename, false) == "" )
 	{ // Assume scripts directory
-		std::string buff = cwdBuffer;
-		buff += "\\";
+		 std::string buff = cwdBuffer;
+		//buff += "";
 		buff += fixSlashes(
 			Macro::instance()->getSettings()->getString(CONFVAR_SCRIPT_DIRECTORY, CONFDEFAULT_SCRIPT_DIRECTORY),
 			SLASHES_TO_WINDOWS);
@@ -584,7 +591,7 @@ std::string scriptGUIDialog(std::string defaultFilename)
     int success = GetOpenFileName(&ofn);
     if( success )
     { // User clicked OK
-		retval = std::string("\"") + ofn.lpstrFile + std::string("\"");
+		retval = ofn.lpstrFile;
     }
 
 	// Reset CWD
@@ -615,12 +622,16 @@ std::string promptForScript()
 	printf("Script> ");
 
 	std::string fullcmd;
+	std::string result;
+	std::string ex = "\"";
 	std::cin.clear();
 	getline(std::cin, fullcmd);
 	std::cin.clear();
 
-	if( fullcmd == "" )
-		fullcmd = scriptGUIDialog(previousScript);
+	if (fullcmd == "") {
+		result = scriptGUIDialog(previousScript);
+		fullcmd = ex + result + ex;
+	}
 
 	//previousScript = fullcmd; // Remember this.
 	return fullcmd;
@@ -754,7 +765,7 @@ int getConfigInt(lua_State *L, const char *key, int defaultValue)
 	int num = 0;
 
 	if( lua_isnumber(L, -1) )
-		num = lua_tointeger(L, -1);
+		num = (int)lua_tointeger(L, -1);
 	else if( lua_isboolean(L, -1) )
 		num = (int)lua_toboolean(L, -1);
 	else
@@ -877,7 +888,7 @@ void printStdHead()
 	EncString::reveal(basicTitle, sizeof(basicTitle), EncString::basicTitle);
 	EncString::reveal(website, sizeof(website), EncString::website);
 
-	printf(basicTitle, AutoVersion::MAJOR, AutoVersion::MINOR, AutoVersion::BUILD);
+	printf(basicTitle, AutoVersion::MAJOR, AutoVersion::MINOR, AutoVersion::BUILD,AutoVersion::BUILD_SUB);
 	printf("\n%s\n", website);
 
 	// Now flush the buffers
@@ -915,13 +926,13 @@ void clearCliScreen()
 	Just like you imagine, it deletes log files older than
 	daysToDelete in days that exist in the given path
 */
-void deleteOldLogs(const char *path, unsigned int daysToDelete)
+void deleteOldLogs(const char *path, size_t daysToDelete)
 {
 	std::vector<std::string> files = getDirectory(path, "txt");
 	FILETIME ft_now;
 	GetSystemTimeAsFileTime(&ft_now);
 
-	for(unsigned int i = 0; i < files.size(); i++)
+	for(size_t i = 0; i < files.size(); i++)
 	{
 		// Get timestamp from file
 		bool success;
@@ -937,8 +948,8 @@ void deleteOldLogs(const char *path, unsigned int daysToDelete)
 		/* Note: Do *NOT* mix TimeTypes from getNow() with FILETIMEs
 			or you're going to have a bad time.
 		*/
-		unsigned int seconds = filetimeDelta(&ft_now, &fad.ftLastAccessTime);
-		unsigned int days = seconds/(24*60*60);
+		size_t seconds = filetimeDelta(&ft_now, &fad.ftLastAccessTime);
+		size_t days = seconds/(24*60*60);
 
 		if( days >= daysToDelete )
 			DeleteFile(fname);
@@ -990,7 +1001,7 @@ void openLog()
 
 	// Iterate through, increasing ID, to find what we will name our log
 	bool nameFound = false;
-	unsigned int fileCount = 1;
+	size_t fileCount = 1;
 	while( !nameFound )
 	{
 		strftime(szTime, sizeof(szTime)-1, "%Y-%m-%d", timeinfo);
@@ -1046,11 +1057,11 @@ void openLog()
 	#else
 		const char *bits = "x86";
 	#endif
-
-	char logVersionFmt[64];
+	
+	char logVersionFmt[128];
 	EncString::reveal(logVersionFmt, sizeof(logVersionFmt), EncString::logVersionFmt);
 
-	Logger::instance()->add(logVersionFmt, AutoVersion::FULLVERSION_STRING, AutoVersion::STATUS, bits);
+	Logger::instance()->add(logVersionFmt, AutoVersion::FULLVERSION_STRING, AutoVersion::STATUS,"with OpenCV", bits);
 	Logger::instance()->add("%s %s, %s\n", szProcessorName, szProcessorSpeed, OS::getOsName().c_str());
 	Logger::instance()->add("User privilege: %s\n", userGroupName.c_str());
 	Logger::instance()->add_raw((char *)&splitLine80);

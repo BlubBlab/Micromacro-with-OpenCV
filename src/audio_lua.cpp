@@ -4,7 +4,8 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
+#define AUDIO_ENABLED
 #ifdef AUDIO_ENABLED
 
 #include "audio_lua.h"
@@ -19,15 +20,14 @@
 
 extern "C"
 {
-	#include <lua.h>
-	#include <lauxlib.h>
-	#include <lualib.h>
+	#include "lua.h"
+	#include "lauxlib.h"
+	#include "lualib.h"
 }
 
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alut.h>
-
+#include "AL/al.h"
+#include "AL/alc.h"
+#include "AL/alut.h"
 using MicroMacro::AudioResource;
 
 int Audio_lua::regmod(lua_State *L)
@@ -265,7 +265,7 @@ int Audio_lua::setVolume(lua_State *L)
 	checkType(L, LT_USERDATA, 1);
 	checkType(L, LT_NUMBER, 2);
 	AudioResource *pResource = static_cast<AudioResource *>(lua_touserdata(L, 1));
-	float volume = lua_tonumber(L, 2);
+	float volume = (float)lua_tonumber(L, 2);
 
 	if( pResource->source != AL_NONE )
 		alSourcef(pResource->source, AL_GAIN, volume);

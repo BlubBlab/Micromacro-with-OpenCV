@@ -186,13 +186,13 @@ int checkType(lua_State *L, int acceptableTypes, int arg)
 	{
 		char expected[256];
 		strlcpy((char*)&expected, "unknown", 8);
-		unsigned int buff_left = sizeof(expected)-1; // What's left to use (below)
+		size_t buff_left = sizeof(expected)-1; // What's left to use (below)
 
-		for(unsigned int i = 0; i < acceptableTypeIDs.size(); i++)
+		for(size_t i = 0; i < acceptableTypeIDs.size(); i++)
 		{
 			if( i == 0 )
 			{
-				unsigned int buff_used = 0;
+				size_t buff_used = 0;
 				buff_used = strlcpy((char*)&expected, lua_typename(L, acceptableTypeIDs.at(i)), buff_left);
 				buff_left = sizeof(expected) - 1 - buff_used;
 			}
@@ -243,7 +243,7 @@ void pushLuaErrorEvent(lua_State *L, const char *fmt, ...)
 	char buffer[2048];
 	va_list va_alist;
 	va_start(va_alist, fmt);
-	_vsnprintf(buffer, sizeof(buffer), fmt, va_alist);
+	_vsnprintf_s(buffer, sizeof(buffer), fmt, va_alist);
 	va_end(va_alist);
 
 	// Queue it

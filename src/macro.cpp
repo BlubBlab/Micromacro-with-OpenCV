@@ -4,13 +4,17 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#include "wininclude.h"
+#include "strl.h"
 #include "macro.h"
 #include "logger.h"
 #include "ncurses_lua.h"
 #include "strl.h"
 #include "debugmessages.h"
+#include "types.h"
+#include "mutex.h"
 
+//#include <Windows.h>
 #ifdef NETWORKING_ENABLED
 	#include "socket_lua.h"
 #endif
@@ -239,11 +243,11 @@ void CMacro::flushEvents()
 int CMacro::handleHidInput()
 {
 	hid.poll();
-
+#pragma loop(hint_parallel(2))
 	// Handle keyboard/mouse
-	for(unsigned int i = 0; i < KS_SIZE; i++)
+	for(size_t i = 0; i < KS_SIZE; i++)
 	{
-		if( hid.released(i) )
+		if( hid.released((int)i) )
 		{ // Key released
 			Event e;
 			if( i > VK_XBUTTON2 )
@@ -251,11 +255,11 @@ int CMacro::handleHidInput()
 			else
 				e.type = MicroMacro::EVENT_MOUSERELEASED;
 			e.idata1 = i;
-			e.idata2 = hid.getToggleState(i);
+			e.idata2 = hid.getToggleState((int)i);
 			try{ pushEvent(e); }
 			catch( std::bad_alloc &ba ) { badAllocation(); }
 		}
-		else if( hid.pressed(i) )
+		else if( hid.pressed((int)i) )
 		{ // Key pressed
 			Event e;
 			if( i > VK_XBUTTON2 )
@@ -264,25 +268,27 @@ int CMacro::handleHidInput()
 				e.type = MicroMacro::EVENT_MOUSEPRESSED;
 
 			e.idata1 = i;
-			e.idata2 = hid.getToggleState(i);
+			e.idata2 = hid.getToggleState((int)i);
 			try{ pushEvent(e); }
 			catch( std::bad_alloc &ba ) { badAllocation(); }
 		}
 	}
 
 	// Handle gamepads
-	unsigned int polled = 0;
-	for(unsigned int i = 0; i < GAMEPADS && polled < hid.getGamepadMaxIndex(); i++)
+
+	size_t polled = 0;
+	#pragma loop(hint_parallel(2))
+	for(size_t i = 0; i < hid.getGamepadMaxIndex(); i++)
 	{
-		if( !hid.gamepadIsAvailable(i) )
+		if( !hid.gamepadIsAvailable((int)i) )
 			continue; // Gamepad is disconnected, skip it
 
 		++polled; // Once we've successfully polled the number of detected gamepads, break
 
 		// Check all buttons on this gamepad
-		for(unsigned int b = 0; b < GAMEPAD_BUTTONS; b++)
+		for(size_t b = 0; b < GAMEPAD_BUTTONS; b++)
 		{
-			if( hid.joyPressed(i, b) )
+			if( hid.joyPressed((int)i, (int)b) )
 			{
 				Event e;
 				e.type = MicroMacro::EVENT_GAMEPADPRESSED;
@@ -291,7 +297,7 @@ int CMacro::handleHidInput()
 				try{ pushEvent(e); }
 				catch( std::bad_alloc &ba ) { badAllocation(); }
 			}
-			else if( hid.joyReleased(i, b) )
+			else if( hid.joyReleased((int)i, (int)b) )
 			{
 				Event e;
 				e.type = MicroMacro::EVENT_GAMEPADRELEASED;
@@ -303,26 +309,26 @@ int CMacro::handleHidInput()
 		}
 
 		// Check POV (D-pad)
-		if( hid.joyPOVChanged(i) )
+		if( hid.joyPOVChanged((int)i) )
 		{
 			Event e;
 			e.type = MicroMacro::EVENT_GAMEPADPOVCHANGED;
 			e.idata1 = i + 1;
-			e.fdata2 = hid.joyPOV(i)/100;
+			e.fdata2 = hid.joyPOV((int)i)/100;
 			try{ pushEvent(e); }
 			catch( std::bad_alloc &ba ) { badAllocation(); }
 		}
 
 		// Check axis
-		for(unsigned int a = 1; a <= GAMEPAD_AXIS_COUNT; a++)
+		for(size_t a = 1; a <= GAMEPAD_AXIS_COUNT; a++)
 		{
-			if( hid.joyAxisChanged(i, a) )
+			if( hid.joyAxisChanged((int)i, (int)a) )
 			{
 				Event e;
 				e.type = MicroMacro::EVENT_GAMEPADAXISCHANGED;
 				e.idata1 = i + 1;
 				e.idata2 = a;
-				e.fdata3 = hid.joyAxis(i, a)/65535.0f*100;
+				e.fdata3 = hid.joyAxis((int)i, (int)a)/65535.0f*100;
 				try{ pushEvent(e); }
 				catch( std::bad_alloc &ba ) { badAllocation(); }
 			}
@@ -338,6 +344,7 @@ int CMacro::handleEvents()
 
 	if( eventQueueLock.lock() )
 	{
+#pragma loop(hint_parallel(2))
 		while( !eventQueue.empty() )
 		{
 			Event e = eventQueue.front();

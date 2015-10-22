@@ -4,13 +4,13 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
 #include "hid.h"
 #include "error.h"
 #include "settings.h"
 #include "macro.h"
 #include "strl.h"
-
+//#include <Windows.h>
 #include "wininclude.h"
 #include <stdio.h>
 
@@ -23,7 +23,7 @@ bool Hid::keyIsExtended(int vk)
 		VK_LMENU, VK_RMENU, 0
 	};
 
-	for(unsigned int i = 0; extList[i] != 0; i++)
+	for(size_t i = 0; extList[i] != 0; i++)
 	{
 		if( extList[i] == vk )
 			return true;
@@ -54,14 +54,14 @@ int Hid::init()
 	GetKeyState(unused); // To get around a Windows bug
 	GetKeyboardState(ks);
 
-	unsigned int gamepadsPolled =  0;
-	for(unsigned int gamepad = 0; gamepad < GAMEPADS; gamepad++)
+	size_t gamepadsPolled =  0;
+	for(size_t gamepad = 0; gamepad < GAMEPADS; gamepad++)
 	{
 		joyinfo[gamepad].dwSize = sizeof(JOYINFOEX);
 		lastjoyinfo[gamepad].dwSize = sizeof(JOYINFOEX);
 		joyinfo[gamepad].dwFlags = JOY_RETURNALL;
 
-		int success = joyGetPosEx(gamepad, &joyinfo[gamepad]);
+		size_t success = joyGetPosEx((UINT)gamepad, &joyinfo[gamepad]);
 
 		if( success != JOYERR_NOERROR )
 			memset(&joyinfo[gamepad], 0, sizeof(JOYINFOEX)); // zero out
@@ -101,8 +101,8 @@ void Hid::poll()
 	GetKeyboardState(ks);
 
 	// Poll gamepad
-	unsigned int gamepadsPolled =  0;
-	for(unsigned int gamepad = 0; gamepad < GAMEPADS; gamepad++)
+	size_t gamepadsPolled =  0;
+	for(size_t gamepad = 0; gamepad < GAMEPADS; gamepad++)
 	{
 		if( !gamepadAvailable[gamepad] )
 			continue;
@@ -111,7 +111,7 @@ void Hid::poll()
 		lastjoyinfo[gamepad].dwSize = sizeof(JOYINFOEX);
 		joyinfo[gamepad].dwFlags = JOY_RETURNALL;
 
-		int success = joyGetPosEx(gamepad, &joyinfo[gamepad]);
+		size_t success = joyGetPosEx((UINT)gamepad, &joyinfo[gamepad]);
 
 		if( success != JOYERR_NOERROR )
 		{	// Must have disconnected, so treat it as such.
@@ -193,8 +193,8 @@ void Hid::hold(int vk)
 {
 	INPUT inp;
 	LPARAM lparam;
-	unsigned int scancode = vk;
-	unsigned int sc_test = MapVirtualKey(vk, 0);
+	size_t scancode = vk;
+	size_t sc_test = MapVirtualKey(vk, 0);
 	bool extended = keyIsExtended(vk);
 
 	if( sc_test != 0 )
@@ -238,7 +238,7 @@ void Hid::hold(int vk)
 			inp.ki.dwFlags = KEYEVENTF_SCANCODE;
 		}
 		inp.type = INPUT_KEYBOARD;
-		inp.ki.wScan = scancode;
+		inp.ki.wScan = (WORD)scancode;
 		inp.ki.dwExtraInfo = lparam;
 	}
 
@@ -249,8 +249,8 @@ void Hid::release(int vk)
 {
 	INPUT inp;
 	LPARAM lparam;
-	unsigned int scancode = vk;
-	unsigned int sc_test = MapVirtualKey(vk, 0);
+	size_t scancode = vk;
+	size_t sc_test = MapVirtualKey(vk, 0);
 	bool extended = keyIsExtended(vk);
 
 	if( sc_test != 0 )
@@ -294,7 +294,7 @@ void Hid::release(int vk)
 			inp.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
 		}
 		inp.type = INPUT_KEYBOARD;
-		inp.ki.wScan = scancode;
+		inp.ki.wScan = (WORD)scancode;
 		inp.ki.dwExtraInfo = lparam;
 	}
 
@@ -327,8 +327,8 @@ void Hid::virtualPress(HWND hwnd, int vk, bool async)
 void Hid::virtualHold(HWND hwnd, int vk)
 {
 	LPARAM lparam;
-	unsigned int scancode = vk;
-	unsigned int sc_test = MapVirtualKey(vk, 0);
+	size_t scancode = vk;
+	size_t sc_test = MapVirtualKey(vk, 0);
 	bool extended = keyIsExtended(vk);
 
 	if( sc_test != 0 )
@@ -380,8 +380,8 @@ void Hid::virtualHold(HWND hwnd, int vk)
 void Hid::virtualRelease(HWND hwnd, int vk)
 {
 	LPARAM lparam;
-	unsigned int scancode = vk;
-	unsigned int sc_test = MapVirtualKey(vk, 0);
+	size_t scancode = vk;
+	size_t sc_test = MapVirtualKey(vk, 0);
 	bool extended = keyIsExtended(vk);
 
 	if( sc_test != 0 )
@@ -615,12 +615,12 @@ void Hid::virtualJoyRelease(HWND hwnd, int gamepad, int button)
 }
 */
 
-unsigned int Hid::getGamepadCount()
+size_t Hid::getGamepadCount()
 {
 	return gamepadCount;
 }
 
-unsigned int Hid::getGamepadMaxIndex()
+size_t Hid::getGamepadMaxIndex()
 {
 	return gamepadMaxIndex;
 }
@@ -635,14 +635,14 @@ bool Hid::gamepadIsAvailable(int gamepadId)
 
 void Hid::repollGamepadMaxIndex()
 {
-	unsigned int gamepadsPolled =  0;
-	for(unsigned int gamepad = 0; gamepad < GAMEPADS; gamepad++)
+	size_t gamepadsPolled =  0;
+	for(size_t gamepad = 0; gamepad < GAMEPADS; gamepad++)
 	{
 		joyinfo[gamepad].dwSize = sizeof(JOYINFOEX);
 		lastjoyinfo[gamepad].dwSize = sizeof(JOYINFOEX);
 		joyinfo[gamepad].dwFlags = JOY_RETURNALL;
 
-		int success = joyGetPosEx(gamepad, &joyinfo[gamepad]);
+		size_t success = joyGetPosEx((UINT)gamepad, &joyinfo[gamepad]);
 
 		if( success != JOYERR_NOERROR )
 		{

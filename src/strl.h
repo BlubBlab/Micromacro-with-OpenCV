@@ -13,6 +13,7 @@
 
 	size_t strlcpy(char *dest, const char*src, size_t max_len);
 	size_t strlcat(char *dest, const char*src, size_t max_len);
+	size_t wstrlcpy(wchar_t *dest, const wchar_t*src, size_t max_len);
 	int slprintf(char *dest, size_t size, const char *fmt, ...);
 
 	void sztolower(char *dest, const char *src, size_t max_len);

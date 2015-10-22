@@ -15,6 +15,8 @@
 	#include "hid.h"
 	#include "event.h"
 	#include "mutex.h"
+	#include "types.h"
+	#include "socket_lua.h"
 
 	class CMacro;
 	typedef CMacro Macro;

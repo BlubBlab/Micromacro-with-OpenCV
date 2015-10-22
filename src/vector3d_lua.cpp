@@ -4,16 +4,20 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#define NOMINMAX
+#include <float.h>
+//#include <amp_math.h>
 #include "vector3d_lua.h"
 #include "luatypes.h"
 #include "types.h"
 #include "error.h"
 #include "strl.h"
-
+#include <algorithm>
 #include <math.h>
 #include <cmath>
-
+#define isnan(x) _isnan(x)
+#define isinf(x) (!_finite(x))
+#define fpu_error(x) (isinf(x) || isnan(x))
 extern "C"
 {
 	#include <lua.h>
@@ -148,9 +152,9 @@ int Vector3d_lua::div(lua_State *L)
 	}
 
 	// Prevent division by zero
-	if( std::isnan(result.x) || std::isinf(result.x)
-		|| std::isnan(result.y) || std::isinf(result.y)
-		|| std::isnan(result.z) || std::isinf(result.z) )
+	if( isnan(result.x) || isinf(result.x)
+		|| isnan(result.y) || isinf(result.y)
+		|| isnan(result.z) || isinf(result.z) )
 	{
 		pushLuaErrorEvent(L, "Attempt to divide by zero or illegal operation.");
 		return 0;
@@ -357,8 +361,8 @@ int Vector3d_lua::slerp(lua_State *L)
 	double ratio = lua_tonumber(L, 3);
 
 	double dot = vec.dot(target);
-	dot = std::max(-1.0, std::min(dot, 1.0)); // Clamp between -1 and 1
-	float theta = acos(dot)*ratio;
+	dot = std::max((-1.0), (std::min(dot, 1.0))); // Clamp between -1 and 1
+	double theta = acos(dot)*ratio;
 	Vector3d relative = (target - vec * dot).normal();
 
 	Vector3d result = vec*cos(theta) + relative*sin(theta);
@@ -389,7 +393,7 @@ int Vector3d_lua::moveTowards(lua_State *L)
 
 	// Normalize
 	result = Vector3d(delta.x, delta.y, delta.z);
-	double scale = sqrtf(result.x*result.x + result.y*result.y + result.z*result.z);
+	double scale = sqrt(result.x*result.x + result.y*result.y + result.z*result.z);
 	result.x /= scale;
 	result.y /= scale;
 	result.z /= scale;
@@ -413,7 +417,7 @@ int Vector3d_lua::moveTowards(lua_State *L)
 }
 
 
-MicroMacro::Vector3d lua_tovector3d(lua_State *L, int index)
+Vector3d lua_tovector3d(lua_State *L, int index)
 {
 	Vector3d vec;
 	lua_getfield(L, index, "x");

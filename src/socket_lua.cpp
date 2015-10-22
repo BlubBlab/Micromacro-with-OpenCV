@@ -4,8 +4,15 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#define NETWORKING_ENABLED
 #ifdef NETWORKING_ENABLED
+
+extern "C"
+{
+	#include <lua.h>
+	#include <lauxlib.h>
+	#include <lualib.h>
+}
 
 #include "socket_lua.h"
 #include "error.h"
@@ -15,12 +22,7 @@
 #include "logger.h"
 #include "debugmessages.h"
 
-extern "C"
-{
-	#include <lua.h>
-	#include <lauxlib.h>
-	#include <lualib.h>
-}
+
 
 #include <ws2tcpip.h>
 #include "macro.h"
@@ -39,13 +41,13 @@ std::vector<Socket *> Socket_lua::socketList;
 
 DWORD WINAPI Socket_lua::socketThread(Socket *pSocket)
 {
-	size_t buffSize = Macro::instance()->getSettings()->getInt(CONFVAR_NETWORK_BUFFER_SIZE);
+	static size_t buffSize = Macro::instance()->getSettings()->getInt(CONFVAR_NETWORK_BUFFER_SIZE);
 	char *readBuff = new char[buffSize+1];
 
-	size_t maxRecvQueueSize = Macro::instance()->getSettings()->getInt(CONFVAR_RECV_QUEUE_SIZE);
+	static size_t maxRecvQueueSize = Macro::instance()->getSettings()->getInt(CONFVAR_RECV_QUEUE_SIZE);
 	while(true)
 	{
-		int result = ::recv(pSocket->socket, readBuff, buffSize, 0);
+		int result = ::recv(pSocket->socket, readBuff, (int)buffSize, 0);
 
 		if( result > 0 )
 		{ // Data received
@@ -358,7 +360,7 @@ int Socket_lua::connect(lua_State *L)
 
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
 	const char *host = lua_tostring(L, 2);
-	int port = lua_tointeger(L, 3);
+	int port = (int)lua_tointeger(L, 3);
 
 	struct sockaddr_in server;
 	server.sin_family = AF_INET;
@@ -432,7 +434,7 @@ int Socket_lua::listen(lua_State *L)
 
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
 	const char *host = lua_tostring(L, 2);
-	int port = lua_tointeger(L, 3);
+	int port = (int)lua_tointeger(L, 3);
 
 	struct sockaddr_in server;
 	server.sin_family = AF_INET;
@@ -523,7 +525,7 @@ int Socket_lua::send(lua_State *L)
 		return 1;
 	}
 
-	int success = ::send(pSocket->socket, msg, len, 0);
+	int success = ::send(pSocket->socket, msg, (int)len, 0);
 	pSocket->mutex.unlock();
 	if( success < 0 )
 	{
@@ -661,7 +663,7 @@ int Socket_lua::gc(lua_State *L)
 int Socket_lua::tostring(lua_State *L)
 {
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
-	char buffer[64];
+	static char buffer[64];
 	slprintf(buffer, sizeof(buffer), "Socket (0x%p)", pSocket->socket);
 
 	lua_pushstring(L, buffer);

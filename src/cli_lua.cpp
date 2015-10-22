@@ -99,7 +99,7 @@ int Cli_lua::clear(lua_State *L)
 int Cli_lua::resetColor(lua_State *L)
 {
 	HANDLE stdOut = Macro::instance()->getAppHandle();
-	DWORD attributes = Macro::instance()->getConsoleDefaultAttributes();
+	WORD attributes = (WORD)Macro::instance()->getConsoleDefaultAttributes();
 	SetConsoleTextAttribute(stdOut, attributes);
 
 	return 0;
@@ -135,15 +135,15 @@ int Cli_lua::setColor(lua_State *L)
 	checkType(L, LT_NUMBER, 1);
 
 
-	DWORD foreground = lua_tointeger(L, 1);
+	DWORD foreground = (DWORD)lua_tointeger(L, 1);
 	DWORD background = 0;
 	if( top >= 2 )
 	{
 		checkType(L, LT_NUMBER, 2);
-		background = lua_tointeger(L, 2);
+		background = (DWORD)lua_tointeger(L, 2);
 	}
 
-	DWORD attributes = foreground + (16*background);
+	WORD attributes = (WORD)(foreground + (16*background));
 	HANDLE stdOut = Macro::instance()->getAppHandle();
 	SetConsoleTextAttribute(stdOut, attributes);
 	return 0;
@@ -212,8 +212,8 @@ int Cli_lua::setAttributes(lua_State *L)
 
 	// For window size
 	SMALL_RECT rect;
-	rect.Right = lua_tointeger(L, 1) - 1;
-	rect.Bottom = lua_tointeger(L, 2) - 1;
+	rect.Right = (short)lua_tointeger(L, 1) - 1;
+	rect.Bottom =(short)lua_tointeger(L, 2) - 1;
 	rect.Left = 0;
 	rect.Top = 0;
 
@@ -225,8 +225,8 @@ int Cli_lua::setAttributes(lua_State *L)
 	// Set buffer size
 	if( args >= 4 )
 	{
-		coord.X = lua_tointeger(L, 3);
-		coord.Y = lua_tointeger(L, 4);
+		coord.X = (short)lua_tointeger(L, 3);
+		coord.Y = (short)lua_tointeger(L, 4);
 	}
 
 	// Ensure that the buffer will be of proper size

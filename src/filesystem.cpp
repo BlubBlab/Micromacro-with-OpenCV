@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <dirent.h>
+#include "dirent.h"
 #include <fstream>
 
 
@@ -109,7 +109,7 @@ std::vector<std::string> getDirectory(std::string path, std::string extension)
 	return files;
 }
 
-unsigned int filetimeDelta(FILETIME *t2, FILETIME *t1)
+size_t filetimeDelta(FILETIME *t2, FILETIME *t1)
 {
 	LARGE_INTEGER tt_f;
 	tt_f.LowPart = t2->dwLowDateTime - t1->dwLowDateTime;
@@ -117,7 +117,7 @@ unsigned int filetimeDelta(FILETIME *t2, FILETIME *t1)
 
 	// Because Windows' FILETIME goes by 100ns increments,
 	// convert it to seconds.
-	return tt_f.QuadPart / 10000000;
+	return (size_t)tt_f.QuadPart / 10000000;
 }
 
 std::string fixSlashes(std::string instr, int type)

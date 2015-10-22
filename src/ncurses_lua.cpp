@@ -4,7 +4,8 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
+#define NOMINMAX
 #include "ncurses_lua.h"
 #include "event.h"
 #include "macro.h"
@@ -24,7 +25,7 @@ extern "C"
 
 bool Ncurses_lua::initialized = false;
 const char *Ncurses_lua::stdscr_name = "STDSCR";
-unsigned int Ncurses_lua::historyIndex = 0;
+size_t Ncurses_lua::historyIndex = 0;
 std::vector<std::string> Ncurses_lua::history;
 
 int Ncurses_lua::is_initialized()
@@ -280,8 +281,8 @@ int Ncurses_lua::move(lua_State *L)
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
 
-	int y = lua_tointeger(L, 2);
-	int x = lua_tointeger(L, 3);
+	int y = (int)lua_tointeger(L, 2);
+	int x = (int)lua_tointeger(L, 3);
 	wmove(*pw, y, x);
 	wrefresh(*pw);
 
@@ -307,10 +308,10 @@ int Ncurses_lua::createWindow(lua_State *L)
 
 	int height, width, starty, startx;
 	WINDOW **pw;
-	starty = lua_tointeger(L, 1);
-	startx = lua_tointeger(L, 2);
-	height = lua_tointeger(L, 3);
-	width = lua_tointeger(L, 4);
+	starty = (int)lua_tointeger(L, 1);
+	startx = (int)lua_tointeger(L, 2);
+	height = (int)lua_tointeger(L, 3);
+	width = (int)lua_tointeger(L, 4);
 
 	WINDOW *nWin = newwin(height, width, starty, startx);
 	if( nWin == NULL )
@@ -349,8 +350,8 @@ int Ncurses_lua::resizeWindow(lua_State *L)
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
 
-	int lines = lua_tointeger(L, 2);
-	int columns = lua_tointeger(L, 3);
+	int lines = (int)lua_tointeger(L, 2);
+	int columns = (int)lua_tointeger(L, 3);
 	int success = wresize(*pw, lines, columns);
 
 	lua_pushboolean(L, success != ERR);
@@ -374,8 +375,8 @@ int Ncurses_lua::moveWindow(lua_State *L)
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
 
-	int y = lua_tointeger(L, 2);
-	int x = lua_tointeger(L, 3);
+	int y = (int)lua_tointeger(L, 2);
+	int x = (int)lua_tointeger(L, 3);
 	int success = mvwin(*pw, y, x);
 
 	lua_pushboolean(L, success != ERR);
@@ -423,8 +424,8 @@ void Ncurses_lua::flush(WINDOW *pw)
 	{
 		if( c == KEY_MOUSE )
 		{
-			MEVENT e;
-			getmouse(&e);
+			unsigned long e;
+			e = getmouse();
 		}
 		c = wgetch(pw);
 	}
@@ -440,10 +441,10 @@ void Ncurses_lua::readline(WINDOW *pw, char *buffer, size_t bufflen)
 {
 	historyIndex = history.size();
 
-	unsigned int pos = 0;
-	unsigned int len = 0;
-	unsigned int outstart = 0;
-	unsigned int outwidth = 0;
+	size_t pos = 0;
+	size_t len = 0;
+	size_t outstart = 0;
+	size_t outwidth = 0;
 	int x, y, mx, my;
 
 	memset(buffer, 0, bufflen);
@@ -467,7 +468,7 @@ void Ncurses_lua::readline(WINDOW *pw, char *buffer, size_t bufflen)
 		if( outstart > len )
 			outstart = len;
 
-		for(unsigned int i = 0; i <= outwidth; i++)
+		for(size_t i = 0; i <= outwidth; i++)
 			mvwaddch(pw, y, x+i, ' '); // Erase garbage
 		mvwaddnstr(pw, y, x, buffer + outstart, (len < outwidth ? len : outwidth)); // len-outstart ?
 		wmove(pw, y, x + (pos - outstart));
@@ -633,9 +634,9 @@ int Ncurses_lua::setPair(lua_State *L)
 	checkType(L, LT_NUMBER, 2);
 	checkType(L, LT_NUMBER, 3);
 
-	int pairIndex = lua_tointeger(L, 1);
-	int foreground = lua_tointeger(L, 2);
-	int background = lua_tointeger(L, 3);
+	int pairIndex = (int)lua_tointeger(L, 1);
+	int foreground = (int)lua_tointeger(L, 2);
+	int background = (int)lua_tointeger(L, 3);
 
 	// Ensure index is not out of bounds
 	if( pairIndex < 1 || pairIndex >= COLOR_PAIRS )
@@ -664,13 +665,13 @@ int Ncurses_lua::getPair(lua_State *L)
 		wrongArgs(L);
 	checkType(L, LT_NUMBER, 1);
 
-	int pairIndex = lua_tointeger(L, 1);
+	int pairIndex = (int)lua_tointeger(L, 1);
 
 	// Ensure index is not out of bounds
 	if( pairIndex < 0 || pairIndex >= COLOR_PAIRS )
 		return 0;
 
-	lua_pushnumber(L, COLOR_PAIR(pairIndex));
+	lua_pushnumber(L, (lua_Number)COLOR_PAIR(pairIndex));
 	return 1;
 }
 
@@ -688,7 +689,7 @@ int Ncurses_lua::attributeOn(lua_State *L)
 
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
-	int attribValue = lua_tointeger(L, 2);
+	int attribValue = (int)lua_tointeger(L, 2);
 	wattron(*pw, attribValue);
 
 	return 0;
@@ -709,7 +710,7 @@ int Ncurses_lua::attributeOff(lua_State *L)
 
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
-	int attribValue = lua_tointeger(L, 2);
+	int attribValue = (int)lua_tointeger(L, 2);
 	wattroff(*pw, attribValue);
 
 	return 0;
@@ -730,7 +731,7 @@ int Ncurses_lua::setAttribute(lua_State *L)
 
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
-	int attribValue = lua_tointeger(L, 2);
+	int attribValue = (int)lua_tointeger(L, 2);
 	wattrset(*pw, attribValue);
 
 	return 0;
@@ -780,7 +781,7 @@ int Ncurses_lua::setBackground(lua_State *L)
 	WINDOW **pw = NULL;
 	pw = (WINDOW **)lua_touserdata(L, 1);
 
-	int style = lua_tointeger(L, 2);
+	int style = (int)lua_tointeger(L, 2);
 	attr_t attribs = style;
 	wbkgd(*pw, attribs);
 	return 0;

@@ -4,7 +4,7 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
 #include "global_addon.h"
 #include "error.h"
 #include "wininclude.h"
@@ -115,7 +115,7 @@ int Global_addon::include(lua_State *L)
 	if( top == 2 )
 	{
 		checkType(L, LT_BOOLEAN, 2);
-		forceRun = lua_toboolean(L, 2);
+		forceRun = (bool)lua_toboolean(L, 2);
 	}
 
 	// Get the full (non-relative) path and filename
@@ -126,7 +126,7 @@ int Global_addon::include(lua_State *L)
 	// Make sure we even need to run it
 	if( !forceRun )
 	{
-		for(unsigned int i = 0; i < includedList.size(); i++)
+		for(size_t i = 0; i < includedList.size(); i++)
 		{
 			if( includedList.at(i) == fullNewPath )
 				return 0; // Already included, skip it

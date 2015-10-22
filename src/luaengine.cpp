@@ -4,7 +4,8 @@
 	URL:		www.solarstrike.net
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
-
+#pragma warning( disable : 4800)
+#define AUDIO_ENABLED
 #include "luaengine.h"
 #include "luatypes.h"
 #include "macro.h"
@@ -24,6 +25,8 @@
 #include "log_lua.h"
 #include "hash_lua.h"
 #include "cli_lua.h"
+#include "map_lua.h"
+#include "cv_lua.h"
 #include "memorychunk_lua.h"
 
 #ifdef NETWORKING_ENABLED
@@ -40,6 +43,7 @@
 #include "math_addon.h"
 #include "table_addon.h"
 
+#include "int64_lua.h"
 #include "vector3d_lua.h"
 
 #include "strl.h"
@@ -183,6 +187,7 @@ int LuaEngine::init()
 		/* Modules */
 		Ncurses_lua::regmod,
 		Time_lua::regmod,
+		Map_lua::regmod,
 		Keyboard_lua::regmod,
 		Mouse_lua::regmod,
 		Key_lua::regmod,
@@ -208,10 +213,12 @@ int LuaEngine::init()
 		Table_addon::regmod,
 		/* Any other classes */
 		Vector3d_lua::regmod,
+		CV_lua::regmod,
+		Int64_lua::regmod,
 		0 // NULL terminator
 	};
 
-	unsigned int i = 0;
+	size_t i = 0;
 	while( regModFuncs[i] != 0 )
 	{
 		int regSuccess = regModFuncs[i](lstate);
@@ -383,17 +390,17 @@ int LuaEngine::runInit(std::vector<std::string> *opt_args)
 
 	// If we have been given some arguments, push those
 	// as strings
-	unsigned int nargs = 0;
+	size_t nargs = 0;
 	if( opt_args != NULL )
 	{
 		nargs = opt_args->size();
-		for(unsigned int i = 0; i < nargs; i++)
+		for(size_t i = 0; i < nargs; i++)
 		{
 			lua_pushstring(lstate, opt_args->at(i).c_str());
 		}
 	}
 
-	int failstate = lua_pcall(lstate, nargs, 0, stackbase+1);
+	size_t failstate = lua_pcall(lstate, (int)nargs, 0, (int)stackbase+1);
 	int retval = MicroMacro::ERR_OK;
 	if( failstate )
 	{
@@ -514,28 +521,28 @@ int LuaEngine::runEvent(MicroMacro::Event &e)
 		case MicroMacro::EVENT_KEYPRESSED:
 			lua_pushstring(lstate, "keypressed");
 			lua_pushinteger(lstate, e.idata1);
-			lua_pushboolean(lstate, e.idata2);
+			lua_pushboolean(lstate, (bool)e.idata2);
 			nargs = 3;
 		break;
 
 		case MicroMacro::EVENT_KEYRELEASED:
 			lua_pushstring(lstate, "keyreleased");
 			lua_pushinteger(lstate, e.idata1);
-			lua_pushboolean(lstate, e.idata2);
+			lua_pushboolean(lstate, (bool)e.idata2);
 			nargs = 3;
 		break;
 
 		case MicroMacro::EVENT_MOUSEPRESSED:
 			lua_pushstring(lstate, "mousepressed");
 			lua_pushinteger(lstate, e.idata1);
-			lua_pushboolean(lstate, e.idata2);
+			lua_pushboolean(lstate, (bool)e.idata2);
 			nargs = 3;
 		break;
 
 		case MicroMacro::EVENT_MOUSERELEASED:
 			lua_pushstring(lstate, "mousereleased");
 			lua_pushinteger(lstate, e.idata1);
-			lua_pushboolean(lstate, e.idata2);
+			lua_pushboolean(lstate, (bool)e.idata2);
 			nargs = 3;
 		break;
 
@@ -584,7 +591,7 @@ int LuaEngine::runEvent(MicroMacro::Event &e)
 			lua_pushstring(lstate, "consoleresized");
 			nargs = 1;
 		break;
-
+		#ifdef NETWORKING_ENABLED
 		case MicroMacro::EVENT_SOCKETCONNECTED:
 		{
 			lua_pushstring(lstate, "socketconnected");
@@ -601,7 +608,7 @@ int LuaEngine::runEvent(MicroMacro::Event &e)
 			nargs = 2;
 		}
 		break;
-
+		#endif
 		case MicroMacro::EVENT_SOCKETRECEIVED:
 			lua_pushstring(lstate, "socketreceived");
 			lua_pushinteger(lstate, e.idata1);
@@ -688,7 +695,7 @@ int LuaEngine::dispatchWindowsMessages()
 	return MicroMacro::ERR_OK;
 }
 
-float LuaEngine::getDeltaTime()
+double LuaEngine::getDeltaTime()
 {
 	return fDeltaTime;
 }

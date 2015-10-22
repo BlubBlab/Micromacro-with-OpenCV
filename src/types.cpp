@@ -22,7 +22,7 @@ BatchJob &BatchJob::operator=(const BatchJob &o)
 	return *this;
 }
 
-std::string MicroMacro::getChunkString(MemoryChunk *pChunk, size_t offset, size_t length, int &err)
+std::string MicroMacro::getChunkString(MemoryChunk *pChunk, int64_t offset, uint64_t length, int &err)
 {
 	err = 0;
 	if( (offset+length) > pChunk->size )
@@ -88,7 +88,7 @@ double Vector3d::dot(const Vector3d &o)
 
 Vector3d Vector3d::normal()
 {
-	double scale = sqrtf(x*x + y*y + z*z);
+	double scale = std::sqrt(x*x + y*y + z*z);
 	return Vector3d(x / scale, y / scale, z / scale);
 }
 

@@ -34,6 +34,8 @@ protected:
 	static int motions2(lua_State *);
 	static int motions_next(lua_State *);
 	static int getPixelSearch( lua_State * L );
+	static int getFilterBufferDimension( lua_State * L );
+	static int hasFilterBuffer( lua_State * L );
 	static int getPixel(lua_State *);
 	static int findCorners( lua_State * );
 	static int setMaskFilter(lua_State *);

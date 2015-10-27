@@ -162,8 +162,11 @@ int CV_lua::regmod( lua_State *L ) {
 		{"setFilter_colour", CV_lua::setFilter_colour},
 		{"setFilter_colour2", CV_lua::setFilter_colour2},
 		{"setFilter_rect", CV_lua::setFilter_rect},
+		{"setFilter", CV_lua::setFilter },
 		{"getFilterPixel", CV_lua::getPixel},
 		{"getFilterPixelSearch", CV_lua::getPixelSearch},
+		{"getFilterBufferDimension",CV_lua::getFilterBufferDimension},
+		{"hasFilterBuffer",CV_lua::hasFilterBuffer},
 		{"findCorners", CV_lua::findCorners},
 		{"lines_next", CV_lua::lines_next},
 		{"cycles_next", CV_lua::cycles_next},
@@ -171,7 +174,6 @@ int CV_lua::regmod( lua_State *L ) {
 		{"motions_next", CV_lua::motions_next},
 		{"clearFilter", CV_lua::clearFilter},
 		{"clearBuffer", CV_lua::clearBuffer},
-		{"setFiler", CV_lua::setFilter},
 		{"loadImage", CV_lua::loadImage},
 		{"saveImage", CV_lua::saveImage},
 		{"setMaskFilter", CV_lua::setMaskFilter},
@@ -1800,6 +1802,23 @@ int CV_lua::motions_next( lua_State *L ) {
 	}
 	return size;
 }
+/*	cv.pixelFilterSearch(number hwnd, number r, number g, number b,
+number x1, number y1, number x2, number y2,
+number accuracy)
+
+Returns (on success):	number x
+number y
+
+Returns (on failure):	nil
+
+Search the given window for a pixel that matches r,g,b
+within the rectangle outlined by (x1,y1) -> (x2,y2)
+
+'accuracy' is how many units each channel must be within
+the given color to generate a match. Default: 1
+
+'step' is the step size (distance between pixels to search).
+*/
 int CV_lua::getPixelSearch( lua_State *L ) {
 	int top = lua_gettop( L );
 	if ( top < 8 || top > 10 )
@@ -1906,7 +1925,6 @@ int CV_lua::getPixelSearch( lua_State *L ) {
 	}
 	
 
-
 	if ( !found )
 		return 0;
 
@@ -1915,8 +1933,48 @@ int CV_lua::getPixelSearch( lua_State *L ) {
 	return 2;
 
 }
+/*	cv.getFilterBufferDimension()
+This function return the dimension of the filterbuffer 
+
+
+@pre  a filter is definded already
+
+
+Returns int cols(x),rows(y) dimension
+*/
+int CV_lua::getFilterBufferDimension( lua_State *L ) {
+	if ( filter_flag == false ) {
+		lua_pushinteger( L, filter.cols );
+		lua_pushinteger( L, filter.rows );
+		return 2;
+	}
+	else
+	{
+		return 0;
+	}
+}
+/*	cv.hasFilterBuffer()
+This function return weather a filterbuffer was 
+
+
+@pre  a filter is definded already
+
+
+Returns bool true or false
+*/
+int CV_lua::hasFilterBuffer( lua_State *L ) {
+	if ( filter_flag == false ) {
+		lua_pushboolean(L, true );
+		return 1;
+	}
+	else
+	{
+		lua_pushboolean( L, false );
+		return 1;
+	}
+}
 /*	cv.getPixel(hwnd, int x, int y,)
-This function return the RGBA values of the part you set up prevously wiht a filter
+This function return the RGBA values of the part you set up previously with a filter
 
 
 @pre  a filter is definded already

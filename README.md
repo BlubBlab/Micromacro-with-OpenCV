@@ -1,5 +1,5 @@
 # micromacro
-MicroMacro programmable macro &amp; automation tool for Windows
+MicroMacro with OpenCV extension programmable macro &amp; automation tool for Windows
 
 
 

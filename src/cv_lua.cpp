@@ -163,6 +163,7 @@ int CV_lua::regmod( lua_State *L ) {
 		{"setFilter_colour2", CV_lua::setFilter_colour2},
 		{"setFilter_rect", CV_lua::setFilter_rect},
 		{"getFilterPixel", CV_lua::getPixel},
+		{"getFilterPixelSearch", CV_lua::getPixelSearch},
 		{"findCorners", CV_lua::findCorners},
 		{"lines_next", CV_lua::lines_next},
 		{"cycles_next", CV_lua::cycles_next},
@@ -1799,137 +1800,121 @@ int CV_lua::motions_next( lua_State *L ) {
 	}
 	return size;
 }
-//int CV_lua::getPixelSearch( lua_State *L ) {
-//	int top = lua_gettop( L );
-//	if ( top < 8 || top > 10 )
-//		wrongArgs( L );
-//	checkType( L, LT_NUMBER, 1 ); // HWND
-//	checkType( L, LT_NUMBER, 2 ); // R
-//	checkType( L, LT_NUMBER, 3 ); // G
-//	checkType( L, LT_NUMBER, 4 ); // B
-//	checkType( L, LT_NUMBER, 5 ); // x1
-//	checkType( L, LT_NUMBER, 6 ); // y1
-//	checkType( L, LT_NUMBER, 7 ); // x2
-//	checkType( L, LT_NUMBER, 8 ); // y2
-//	checkType( L, LT_NUMBER, 9 ); // accuracy
-//	checkType( L, LT_NUMBER, 10 ); // step
-//
-//	POINT retval;
-//	POINT offset;
-//	RECT winRect;
-//	RECT clientRect;
-//	int r1, g1, b1, r2, g2, b2;
-//	int x1, y1, x2, y2;
-//	int step = 1;
-//	int accuracy = 1;
-//	HWND hwnd;
-//	bool reversex;
-//	bool reversey;
-//	Mat local;
-//	hwnd = (HWND) lua_tointeger( L, 1 );
-//	r1 = (int) lua_tointeger( L, 2 );
-//	g1 = (int) lua_tointeger( L, 3 );
-//	b1 = (int) lua_tointeger( L, 4 );
-//	x1 = (int) lua_tointeger( L, 5 );
-//	y1 = (int) lua_tointeger( L, 6 );
-//	x2 = (int) lua_tointeger( L, 7 );
-//	y2 = (int) lua_tointeger( L, 8 );
-//
-//	if ( top >= 9 )
-//		accuracy = (int) lua_tointeger( L, 9 );
-//
-//	if ( top >= 10 )
-//		step = (int) lua_tointeger( L, 10 );
-//
-//	if ( step < 1 ) step = 1;
-//	reversex = ( x2 < x1 );
-//	reversey = ( y2 < y1 );
-//	int steps_x = abs( x2 - x1 ) / step;
-//	int steps_y = abs( y2 - y1 ) / step;
-//
-//	// The number of steps across each axis
-//	int width = abs( x2 - x1 );
-//	int height = abs( y2 - y1 );
-//
-//
-//	if ( hwnd == 0 )
-//		hwnd = GetDesktopWindow();
-//
-//	if ( filter_flag == false ) {
-//		local = hwnd2mat( hwnd );
-//	}
-//	else
-//	{
-//		local = filter;
-//
-//	}
-//
-//
-//
-//	if ( height > scanlines ) // Re-adjust scanlines if we didn't read enough
-//	{
-//		height = scanlines;
-//		steps_y = height / step;
-//	}
-//
-//	// Iterate through, check for matches
-//	int x, y;
-//	retval.x = 0; retval.y = 0;
-//	bool found = false;
-//
-//	for ( int i = 0; i <= steps_y; i++ )
-//	{
-//		for ( int v = 0; v <= steps_x; v++ )
-//		{
-//			if ( !reversex )
-//				x = x1 + v*step;
-//			else
-//				x = x2 + width - v*step;
-//			if ( !reversey )
-//				y = y1 + i*step;
-//			else
-//				y = y2 + height - i*step;
-//
-//			if ( x > ( offset.x + clientRect.right - clientRect.left ) )
-//			{
-//				x = 0;
-//				y++;
-//				continue;
-//			}
-//			if ( y > ( clientRect.bottom - clientRect.top ) )
-//			{
-//				i = steps_y;
-//				break;
-//			}
-//
-//			RGBQUAD rgba = _pixels[ ( biHeight - ( y + 1 ) )*biWidth + x ];
-//
-//			r2 = rgba.rgbRed;
-//			g2 = rgba.rgbGreen;
-//			b2 = rgba.rgbBlue;
-//
-//			if ( abs( r2 - r1 ) <= accuracy &&
-//				abs( g2 - g1 ) <= accuracy &&
-//				abs( b2 - b1 ) <= accuracy )
-//			{
-//				retval.x = x;
-//				retval.y = y;
-//				found = true;
-//				i = steps_y; // To break from Y loop
-//				break;
-//			}
-//		}
-//	}
-//
-//
-//	if ( !found )
-//		return 0;
-//
-//	lua_pushinteger( L, retval.x );
-//	lua_pushinteger( L, retval.y );
-//	return 2;
-//
-//}
+int CV_lua::getPixelSearch( lua_State *L ) {
+	int top = lua_gettop( L );
+	if ( top < 8 || top > 10 )
+		wrongArgs( L );
+	checkType( L, LT_NUMBER, 1 ); // HWND
+	checkType( L, LT_NUMBER, 2 ); // R
+	checkType( L, LT_NUMBER, 3 ); // G
+	checkType( L, LT_NUMBER, 4 ); // B
+	checkType( L, LT_NUMBER, 5 ); // x1
+	checkType( L, LT_NUMBER, 6 ); // y1
+	checkType( L, LT_NUMBER, 7 ); // x2
+	checkType( L, LT_NUMBER, 8 ); // y2
+	checkType( L, LT_NUMBER, 9 ); // accuracy
+	checkType( L, LT_NUMBER, 10 ); // step
+
+	/*POINT retval;
+	POINT offset;
+	RECT winRect;
+	RECT clientRect;*/
+	int r1, g1, b1, r2, g2, b2;
+	int x1, y1, x2, y2;
+	int resultx, resulty;
+	int startx, endx, starty, endy;
+	int step = 1;
+	int accuracy = 1;
+	HWND hwnd;
+	bool reversex;
+	bool reversey;
+	Mat local;
+	bool found = false;
+
+	hwnd = (HWND) lua_tointeger( L, 1 );
+	r1 = (int) lua_tointeger( L, 2 );
+	g1 = (int) lua_tointeger( L, 3 );
+	b1 = (int) lua_tointeger( L, 4 );
+	x1 = (int) lua_tointeger( L, 5 );
+	y1 = (int) lua_tointeger( L, 6 );
+	x2 = (int) lua_tointeger( L, 7 );
+	y2 = (int) lua_tointeger( L, 8 );
+
+	if ( top >= 9 )
+		accuracy = (int) lua_tointeger( L, 9 );
+
+	reversex = ( x2 < x1 );
+	reversey = ( y2 < y1 );
+	int steps_x = abs( x2 - x1 ) / step;
+	int steps_y = abs( y2 - y1 ) / step;
+
+
+	if(reversex ){ 
+		startx = x2;
+		endx = x1;
+	}
+	else
+	{
+		startx = x1;
+		endx = x2;
+	}
+	if ( reversey ) {
+		starty = y2;
+		endy = y1;
+	}
+	else
+	{
+		starty = y1;
+		endy = y2;
+	}
+	// The number of steps across each axis
+	int width = abs( x2 - x1 );
+	int height = abs( y2 - y1 );
+
+
+	if ( hwnd == 0 )
+		hwnd = GetDesktopWindow();
+
+	if ( filter_flag == false ) {
+		local = hwnd2mat( hwnd );
+	}
+	else
+	{
+		local = filter;
+
+	}
+
+
+
+	for ( int x = startx; x <= endx && x < local.cols; x++ )
+	{
+		for ( int y = starty; y <= endy && y < local.rows ; y++ )
+		{
+			int b = local.at<Vec3b>( y, x )[ 0 ];
+			int g = local.at<Vec3b>( y, x )[ 1 ];
+			int r = local.at<Vec3b>( y, x )[ 2 ];
+			
+			/*if ( local.at<Vec3b>( y, x ).channels > 3 ) {
+				a = local.at<Vec3b>( y, x )[ 3 ];
+			}*/
+			if ( abs( r1 - r ) <= accuracy && abs( g1 - g ) <= accuracy && abs( b1 - b ) <= accuracy ) {
+				found = true;
+				resultx = x;
+				resulty = y;
+			}
+		}
+	}
+	
+
+
+	if ( !found )
+		return 0;
+
+	lua_pushinteger( L, resultx );
+	lua_pushinteger( L, resulty );
+	return 2;
+
+}
 /*	cv.getPixel(hwnd, int x, int y,)
 This function return the RGBA values of the part you set up prevously wiht a filter
 

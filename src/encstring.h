@@ -5,7 +5,9 @@
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
 
+
 //	Generated:	1438462141
+
 
 #ifndef ENCSTRING_H
 #define ENCSTRING_H
@@ -15,6 +17,7 @@
 	namespace EncString
 	{
 		size_t reveal(char *, size_t, const int *);
+
 		const unsigned long enckey = 633117676;
 
 		const int basicTitle[] = {
@@ -37,5 +40,6 @@
 			0x25bc9b83, 0x25bc9b82, 0x25bc9bcc, 0x25bc9bc9, 0x25bc9b9f, 0x25bc9bcc, 0x25bc9bc4, 0x25bc9bc9,
 			0x25bc9b9f, 0x25bc9bc5, 0x25bc9bcc, 0x25bc9bc9, 0x25bc9b9f, 0x25bc9bcc, 0x25bc9bc9, 0x25bc9b9f,
 			0x25bc9be6, 0};
+
 	}
 #endif

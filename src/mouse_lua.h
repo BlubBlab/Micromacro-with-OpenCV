@@ -24,7 +24,9 @@
 			static int move(lua_State *);
 			static int wheelMove(lua_State *);
 			static int setPosition(lua_State *);
+			static int setWindowPosition( lua_State * L );
 			static int getPosition(lua_State *);
+			static int getWindowPosition( lua_State * L );
 			static int getConsolePosition(lua_State *);
 
 			static int virtualPress(lua_State *);

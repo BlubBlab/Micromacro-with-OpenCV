@@ -18,7 +18,11 @@
 			static int trim(lua_State *);
 			static int random(lua_State *);
 			static int toUnicode(lua_State *);
-
+			static int regexmatch( lua_State * );
+			static int regexsearch( lua_State * );
+			static int regexsearchall( lua_State * );
+			static int regexreplaceall( lua_State * L );
+			static int regexreplace( lua_State * L );
 		public:
 			static int regmod(lua_State *);
 	};

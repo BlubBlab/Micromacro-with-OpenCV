@@ -29,7 +29,9 @@ int Mouse_lua::regmod(lua_State *L)
 		{"release", Mouse_lua::release},
 		{"move", Mouse_lua::move},
 		{"setPosition", Mouse_lua::setPosition},
+		{"setWindowPosition",Mouse_lua::setWindowPosition },
 		{"getPosition", Mouse_lua::getPosition},
+		{"getWindowPosition",Mouse_lua::getWindowPosition},
 		{"getConsolePosition", Mouse_lua::getConsolePosition},
 		{"wheelMove", Mouse_lua::wheelMove},
 		{"virtualPress", Mouse_lua::virtualPress},
@@ -263,7 +265,32 @@ int Mouse_lua::setPosition(lua_State *L)
 
 	return 0;
 }
+/*	mouse.setWindowPosition(hwnd, number x, number y)
+Returns:	nil
 
+Attempts to set the physical mouse wheel inside the windows to
+the given coordinates. 'x' and 'y' are
+specified in pixels.
+
+*/
+int Mouse_lua::setWindowPosition( lua_State *L ) {
+	if ( lua_gettop( L ) != 3 )
+		wrongArgs( L );
+	checkType( L, LT_NUMBER, 1 );
+	checkType( L, LT_NUMBER, 2 );
+	checkType( L, LT_NUMBER, 3 );
+	
+	HWND hwnd = (HWND) lua_tointeger( L, 1 );
+	int x = (int) lua_tointeger( L, 2 );
+	int y = (int) lua_tointeger( L, 3 );
+	POINT p;
+	p.x = x;
+	p.y = y;
+	ClientToScreen( hwnd, &p );
+	SetCursorPos( p.x, p.y );
+
+	return 0;
+}
 /*	mouse.getPosition()
 	Returns:	number x
 				number y
@@ -280,6 +307,31 @@ int Mouse_lua::getPosition(lua_State *L)
 	lua_pushnumber(L, p.x);
 	lua_pushnumber(L, p.y);
 	return 2;
+}
+/*	mouse.getWindowPosition(hwnd)
+Returns:	number x
+number y
+
+Returns the position of the physical mouse cursor, in pixels insode the window.
+*/
+int Mouse_lua::getWindowPosition( lua_State *L ) {
+	if ( lua_gettop( L ) != 1 )
+		wrongArgs( L );
+	checkType( L, LT_NUMBER, 1 );
+
+	HWND hwnd = (HWND) lua_tointeger( L, 1 );
+
+	POINT p;
+	GetCursorPos( &p );
+	if ( ScreenToClient( hwnd, &p ) )
+	{
+		lua_pushnumber( L, p.x );
+		lua_pushnumber( L, p.y );
+
+		return 2;
+	}
+	return 0;
+	
 }
 
 /*	mouse.getConsolePosition()

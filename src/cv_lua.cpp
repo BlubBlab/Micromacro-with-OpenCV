@@ -23,8 +23,6 @@ License:	Modified BSD (see license.txt)
 #include <iostream>
 #include <map> 
 
-using namespace cv;
-using namespace std;
 
 
 extern "C"
@@ -34,24 +32,24 @@ extern "C"
 #include <lualib.h>
 }
 //filter on heap
-Mat filter;
+cv::Mat filter;
 bool filter_flag = false;
 bool mask_flag = false;
 int number_args = 0;
 // save info on heap
-queue<int> buffer;
-queue<map<string, int>> mask;
+std::queue<int> buffer;
+std::queue<std::map<std::string, int>> mask;
 /*
 Helper function to which made screenshots and convert it into an Mat object
 In this function also the filterMask are applied to cut of regions.
 */
-Mat hwnd2mat( HWND hwnd ) {
+cv::Mat hwnd2mat( HWND hwnd ) {
 
 	HDC hwindowDC, hwindowCompatibleDC;
 
 	int height, width, srcheight, srcwidth;
 	HBITMAP hbwindow;
-	Mat src;
+	cv::Mat src;
 	BITMAPINFOHEADER  bi;
 
 	hwindowDC = GetDC( hwnd );
@@ -93,7 +91,7 @@ Mat hwnd2mat( HWND hwnd ) {
 	if ( src.empty() ) {
 		printf( "possible wrong HWD no picture \n" );
 	}
-	queue<map<string, int>> rebuffer;
+	std::queue<std::map<std::string, int>> rebuffer;
 
 	if ( mask_flag ) {
 		//seek the the list through
@@ -127,10 +125,10 @@ Mat hwnd2mat( HWND hwnd ) {
 			for ( int i = 0 + y1; i < src.rows && i < y2; i++ ) { //i=y
 				for ( int j = 0 + x1; j < src.cols && j < x2; j++ ) { // j= x
 					if ( i >= 0 && j >= 0 ) {
-						src.at<Vec3b>( i, j )[ 0 ] = 0;
-						src.at<Vec3b>( i, j )[ 1 ] = 0;
-						src.at<Vec3b>( i, j )[ 2 ] = 0;
-						src.at<Vec3b>( i, j )[ 3 ] = 0;
+						src.at<cv::Vec3b>( i, j )[ 0 ] = 0;
+						src.at<cv::Vec3b>( i, j )[ 1 ] = 0;
+						src.at<cv::Vec3b>( i, j )[ 2 ] = 0;
+						src.at<cv::Vec3b>( i, j )[ 3 ] = 0;
 					}
 				}
 			}
@@ -231,18 +229,18 @@ int CV_lua::setFilter_rect( lua_State *L ) {
 			hwnd = GetDesktopWindow();
 		}
 
-		Mat src = hwnd2mat( hwnd );
+		cv::Mat src = hwnd2mat( hwnd );
 		//clear the old filter
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 		cvtColor( src, src, CV_8UC3 );
 
-		Rect myROI( x, y, width, heigh );
+		cv::Rect myROI( x, y, width, heigh );
 		filter = src( myROI );
 		filter_flag = true;
 	}
 	else
 	{
-		Rect myROI( x, y, width, heigh );
+		cv::Rect myROI( x, y, width, heigh );
 		filter = filter( myROI );
 		//filter the result again
 
@@ -251,9 +249,9 @@ int CV_lua::setFilter_rect( lua_State *L ) {
 		checkType( L, LT_BOOLEAN, 6 );
 		bool showwindows = lua_toboolean( L, 6 );
 		if ( showwindows ) {
-			namedWindow( "Micro Macro 2:cv_filter", WINDOW_NORMAL );
+			cv::namedWindow( "Micro Macro 2:cv_filter", cv::WINDOW_NORMAL );
 			imshow( "Micro Macro 2:cv_filter", filter );
-			waitKey( 0 );
+			cv::waitKey( 0 );
 
 		}
 	}
@@ -311,29 +309,29 @@ int CV_lua::setFilter_colour( lua_State *L ) {
 			hwnd = GetDesktopWindow();
 		}
 
-		Mat src = hwnd2mat( hwnd );
+		cv::Mat src = hwnd2mat( hwnd );
 		//clear the old filter
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 
 		//	cvtColor(src,src,CV_8UC3);
 		//cvtColor(filter,filter,CV_8UC3);
 		//Mat dst,cdst;
-		inRange( src, Scalar( min_blue, min_green, min_red ), Scalar( max_blue, max_green, max_red ), filter );
+		inRange( src, cv::Scalar( min_blue, min_green, min_red ), cv::Scalar( max_blue, max_green, max_red ), filter );
 		filter_flag = true;
 		//filter.copyTo(filter,target);
 	}
 	else
 	{
 		//filter the result again
-		inRange( filter, Scalar( min_blue, min_green, min_red ), Scalar( max_blue, max_green, max_red ), filter );
+		inRange( filter, cv::Scalar( min_blue, min_green, min_red ), cv::Scalar( max_blue, max_green, max_red ), filter );
 	}
 	if ( argsn == 8 ) {
 		checkType( L, LT_BOOLEAN, 8 );
 		bool showwindows = lua_toboolean( L, 8 );
 		if ( showwindows ) {
-			namedWindow( "Micro Macro 2:cv_filter_colour", WINDOW_NORMAL );
+			cv::namedWindow( "Micro Macro 2:cv_filter_colour", cv::WINDOW_NORMAL );
 			imshow( "Micro Macro 2:cv_filter_colour", filter );
-			waitKey( 0 );
+			cv::waitKey( 0 );
 
 		}
 	}
@@ -390,9 +388,9 @@ int CV_lua::setFilter_colour2( lua_State *L ) {
 			hwnd = GetDesktopWindow();
 		}
 
-		Mat src = hwnd2mat( hwnd );
+		cv::Mat src = hwnd2mat( hwnd );
 		//clear the old filter
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 
 		//	cvtColor(src,src,CV_8UC3);
 		//cvtColor(filter,filter,CV_8UC3);
@@ -400,13 +398,13 @@ int CV_lua::setFilter_colour2( lua_State *L ) {
 #pragma loop(hint_parallel(4))
 		for ( int i = 0; i < src.rows; i++ ) { //i=y
 			for ( int j = 0; j < src.cols; j++ ) { // j= x
-				if ( !( src.at<Vec3b>( i, j )[ 0 ] <= max_blue &&  src.at<Vec3b>( i, j )[ 0 ] >= min_blue &&
-					src.at<Vec3b>( i, j )[ 1 ] <= max_green && src.at<Vec3b>( i, j )[ 1 ] >= min_green &&
-					src.at<Vec3b>( i, j )[ 2 ] <= max_red && src.at<Vec3b>( i, j )[ 2 ] >= min_red ) ) {
-					src.at<Vec3b>( i, j )[ 0 ] = 0;
-					src.at<Vec3b>( i, j )[ 1 ] = 0;
-					src.at<Vec3b>( i, j )[ 2 ] = 0;
-					src.at<Vec3b>( i, j )[ 3 ] = 0;
+				if ( !( src.at<cv::Vec3b>( i, j )[ 0 ] <= max_blue &&  src.at<cv::Vec3b>( i, j )[ 0 ] >= min_blue &&
+					src.at<cv::Vec3b>( i, j )[ 1 ] <= max_green && src.at<cv::Vec3b>( i, j )[ 1 ] >= min_green &&
+					src.at<cv::Vec3b>( i, j )[ 2 ] <= max_red && src.at<cv::Vec3b>( i, j )[ 2 ] >= min_red ) ) {
+					src.at<cv::Vec3b>( i, j )[ 0 ] = 0;
+					src.at<cv::Vec3b>( i, j )[ 1 ] = 0;
+					src.at<cv::Vec3b>( i, j )[ 2 ] = 0;
+					src.at<cv::Vec3b>( i, j )[ 3 ] = 0;
 				}
 			}
 		}
@@ -419,26 +417,26 @@ int CV_lua::setFilter_colour2( lua_State *L ) {
 #pragma loop(hint_parallel(4))
 		for ( int i = 0; i < filter.rows; i++ ) { //i=y
 			for ( int j = 0; j < filter.cols; j++ ) { // j= x
-				if ( !( filter.at<Vec3b>( i, j )[ 0 ] <= max_blue &&  filter.at<Vec3b>( i, j )[ 0 ] >= min_blue &&
-					filter.at<Vec3b>( i, j )[ 1 ] <= max_green && filter.at<Vec3b>( i, j )[ 1 ] >= min_green &&
-					filter.at<Vec3b>( i, j )[ 2 ] <= max_red && filter.at<Vec3b>( i, j )[ 2 ] >= min_red ) ) {
-					filter.at<Vec3b>( i, j )[ 0 ] = 0;
-					filter.at<Vec3b>( i, j )[ 1 ] = 0;
-					filter.at<Vec3b>( i, j )[ 2 ] = 0;
-					filter.at<Vec3b>( i, j )[ 3 ] = 0;
+				if ( !( filter.at<cv::Vec3b>( i, j )[ 0 ] <= max_blue &&  filter.at<cv::Vec3b>( i, j )[ 0 ] >= min_blue &&
+					filter.at<cv::Vec3b>( i, j )[ 1 ] <= max_green && filter.at<cv::Vec3b>( i, j )[ 1 ] >= min_green &&
+					filter.at<cv::Vec3b>( i, j )[ 2 ] <= max_red && filter.at<cv::Vec3b>( i, j )[ 2 ] >= min_red ) ) {
+					filter.at<cv::Vec3b>( i, j )[ 0 ] = 0;
+					filter.at<cv::Vec3b>( i, j )[ 1 ] = 0;
+					filter.at<cv::Vec3b>( i, j )[ 2 ] = 0;
+					filter.at<cv::Vec3b>( i, j )[ 3 ] = 0;
 				}
 			}
 		}
 		//filter the result again
-		inRange( filter, Scalar( min_blue, min_green, min_red ), Scalar( max_blue, max_green, max_red ), filter );
+		inRange( filter, cv::Scalar( min_blue, min_green, min_red ), cv::Scalar( max_blue, max_green, max_red ), filter );
 	}
 	if ( argsn == 8 ) {
 		checkType( L, LT_BOOLEAN, 8 );
 		bool showwindows = lua_toboolean( L, 8 );
 		if ( showwindows ) {
-			namedWindow( "Micro Macro 2:cv_filter_colour", WINDOW_NORMAL );
+			cv::namedWindow( "Micro Macro 2:cv_filter_colour", cv::WINDOW_NORMAL );
 			imshow( "Micro Macro 2:cv_filter_colour", filter );
-			waitKey( 0 );
+			cv::waitKey( 0 );
 
 		}
 	}
@@ -453,7 +451,7 @@ int CV_lua::clearFilter( lua_State *L ) {
 	if ( lua_gettop( L ) != 0 )
 		wrongArgs( L );
 	filter_flag = false;
-	filter = Scalar( 0, 0, 0 );
+	filter = cv::Scalar( 0, 0, 0 );
 	filter.resize( 0 );
 	return 0;
 }
@@ -494,7 +492,7 @@ int CV_lua::lines( lua_State *L ) {
 	//size_t filenameLen;
 	HWND hwnd = (HWND) lua_tointeger( L, 1 );
 	//const char *filename = lua_tolstring(L, 2, &filenameLen);
-	Mat src;
+	cv::Mat src;
 
 	if ( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -507,12 +505,12 @@ int CV_lua::lines( lua_State *L ) {
 		src = filter;
 
 	}
-	Mat dst, cdst;
+	cv::Mat dst, cdst;
 
 
 
 	Canny( src, dst, 50, 200, 3 );
-	cvtColor( dst, cdst, COLOR_GRAY2BGR );
+	cv::cvtColor( dst, cdst, cv::COLOR_GRAY2BGR );
 
 	int min_length;
 	int max_gap;
@@ -545,13 +543,13 @@ int CV_lua::lines( lua_State *L ) {
 		debug_image = false;
 	}
 
-	vector<Vec4i> lines;
+	std::vector<cv::Vec4i> lines;
 	//HoughLinesP(cdst, lines, 1, CV_PI/180, 50, 50, 10 );
 	HoughLinesP( dst, lines, 1, CV_PI / 180, 50, min_length, max_gap );
 	int counter = 0;
 	for ( size_t i = 0; i < lines.size(); i++ )
 	{
-		Vec4i l = lines[ i ];
+		cv::Vec4i l = lines[ i ];
 
 		buffer.push( l[ 0 ] );
 		buffer.push( l[ 1 ] );
@@ -559,7 +557,7 @@ int CV_lua::lines( lua_State *L ) {
 		buffer.push( l[ 3 ] );
 
 		if ( debug_image == true ) {
-			line( cdst, Point( l[ 0 ], l[ 1 ] ), Point( l[ 2 ], l[ 3 ] ), Scalar( 0, 0, 255 ), 3, 8 );
+			line( cdst, cv::Point( l[ 0 ], l[ 1 ] ), cv::Point( l[ 2 ], l[ 3 ] ), cv::Scalar( 0, 0, 255 ), 3, 8 );
 		}
 	}
 	//std::cout << "Here comes the counter: "<< counter << std::endl;
@@ -570,9 +568,9 @@ int CV_lua::lines( lua_State *L ) {
 
 	//waitKey();
 	if ( debug_image ) {
-		namedWindow( "Micro Macro 2:cv_lines", WINDOW_NORMAL );
+		cv::namedWindow( "Micro Macro 2:cv_lines", cv::WINDOW_NORMAL );
 		imshow( "Micro Macro 2:cv_lines", cdst );
-		waitKey( 0 );
+		cv::waitKey( 0 );
 	}
 	// avoid memory leak
 
@@ -591,7 +589,7 @@ int CV_lua::lines( lua_State *L ) {
 
 	if ( filter_flag == true ) {
 		filter_flag = false;
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 		filter.resize( 0 );
 	}
 	//push number of objects
@@ -635,7 +633,7 @@ int CV_lua::findCorners( lua_State *L ) {
 	HWND hwnd = (HWND) lua_tointeger( L, 1 );
 	int corners = (int) lua_tointeger( L, 2 );
 	//const char *filename = lua_tolstring(L, 2, &filenameLen);
-	Mat src;
+	cv::Mat src;
 
 	if ( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -668,7 +666,7 @@ int CV_lua::findCorners( lua_State *L ) {
 
 	if ( filter_flag == true ) {
 		filter_flag = false;
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 		filter.resize( 0 );
 	}
 	//push number of objects
@@ -712,7 +710,7 @@ int CV_lua::cycles( lua_State *L ) {
 	number_args = 3;
 	HWND hwnd = (HWND) lua_tointeger( L, 1 );
 	//const char *filename = lua_tolstring(L, 2, &filenameLen);
-	Mat src;
+	cv::Mat src;
 
 	if ( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -725,11 +723,11 @@ int CV_lua::cycles( lua_State *L ) {
 		src = filter;
 
 	}
-	Mat dst, cdst;
+	cv::Mat dst, cdst;
 
 
 	Canny( src, dst, 50, 200, 3 );
-	cvtColor( dst, cdst, COLOR_GRAY2BGR );
+	cvtColor( dst, cdst, cv::COLOR_GRAY2BGR );
 
 	int min_radius;
 	int max_radius;
@@ -763,10 +761,10 @@ int CV_lua::cycles( lua_State *L ) {
 	}
 
 
-	vector<Vec3f> circles;
+	std::vector<cv::Vec3f> circles;
 
 	/// Apply the Hough Transform to find the circles
-	HoughCircles( dst, circles, HOUGH_GRADIENT, 1, dst.rows / 8, 200, 100, min_radius, max_radius );
+	HoughCircles( dst, circles, cv::HOUGH_GRADIENT, 1, dst.rows / 8, 200, 100, min_radius, max_radius );
 	//int counter = 0;
 	for ( size_t i = 0; i < circles.size(); i++ )
 	{
@@ -776,12 +774,12 @@ int CV_lua::cycles( lua_State *L ) {
 		buffer.push( (int) circles[ i ][ 1 ] );
 		buffer.push( (int) circles[ i ][ 2 ] );
 		if ( debug_image == true ) {
-			Point center( cvRound( circles[ i ][ 0 ] ), cvRound( circles[ i ][ 1 ] ) );
+			cv::Point center( cvRound( circles[ i ][ 0 ] ), cvRound( circles[ i ][ 1 ] ) );
 			int radius = cvRound( circles[ i ][ 2 ] );
 			// circle center
-			circle( src, center, 3, Scalar( 0, 255, 0 ), -1, 8, 0 );
+			circle( src, center, 3, cv::Scalar( 0, 255, 0 ), -1, 8, 0 );
 			// circle outline
-			circle( src, center, radius, Scalar( 0, 0, 255 ), 3, 8, 0 );
+			circle( src, center, radius, cv::Scalar( 0, 0, 255 ), 3, 8, 0 );
 		}
 
 	}
@@ -790,9 +788,9 @@ int CV_lua::cycles( lua_State *L ) {
 
 	//waitKey();
 	if ( debug_image ) {
-		namedWindow( "Micro Macro 2:cv_cycles", WINDOW_NORMAL );
+		cv::namedWindow( "Micro Macro 2:cv_cycles", cv::WINDOW_NORMAL );
 		imshow( "Micro Macro 2:cv_cycles", src );
-		waitKey( 0 );
+		cv::waitKey( 0 );
 	}
 	// avoid memory leak
 
@@ -811,7 +809,7 @@ int CV_lua::cycles( lua_State *L ) {
 
 	if ( filter_flag == true ) {
 		filter_flag = false;
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 		filter.resize( 0 );
 	}
 	//push number of objects
@@ -877,7 +875,7 @@ int CV_lua::objects( lua_State *L ) {
 		hwnd = GetDesktopWindow();
 
 
-	Mat src;
+	cv::Mat src;
 
 	//global setup for return values
 	number_args = 4;
@@ -893,16 +891,16 @@ int CV_lua::objects( lua_State *L ) {
 		src = filter;
 
 	}
-	Mat dst;
+	cv::Mat dst;
 
-	String xml_string = lua_tostring( L, 2 );
-	CascadeClassifier seekobject;
+	std::string xml_string = lua_tostring( L, 2 );
+	cv::CascadeClassifier seekobject;
 
 	if ( !seekobject.load( xml_string ) ) {
 		printf( "--(!)Error loading\n" ); return 0;
 	};
 
-	std::vector<Rect> faces;
+	std::vector<cv::Rect> faces;
 
 	bool debug_image;
 	int show_insec = 30;
@@ -916,11 +914,11 @@ int CV_lua::objects( lua_State *L ) {
 	}
 	//any time for the window?
 
-	Mat frame_gray;
-	frame_gray.create( src.size(), COLOR_BGR2GRAY );
-	frame_gray = Scalar( 0, 0, 0 );
+	cv::Mat frame_gray;
+	frame_gray.create( src.size(), cv::COLOR_BGR2GRAY );
+	frame_gray = cv::Scalar( 0, 0, 0 );
 
-	cvtColor( src, frame_gray, COLOR_BGR2GRAY );
+	cvtColor( src, frame_gray, cv::COLOR_BGR2GRAY );
 	equalizeHist( frame_gray, frame_gray );
 
 
@@ -934,7 +932,7 @@ int CV_lua::objects( lua_State *L ) {
 			int min_width = (int) lua_tointeger( L, 3 );
 			int min_height = (int) lua_tointeger( L, 4 );
 
-			seekobject.detectMultiScale( frame_gray, faces, 1.1, 2, 0, Size( min_width, min_height ) );
+			seekobject.detectMultiScale( frame_gray, faces, 1.1, 2, 0, cv::Size( min_width, min_height ) );
 		}
 		else
 		{
@@ -943,7 +941,7 @@ int CV_lua::objects( lua_State *L ) {
 			int max_width = (int) lua_tointeger( L, 5 );
 			int max_height = (int) lua_tointeger( L, 6 );
 
-			seekobject.detectMultiScale( frame_gray, faces, 1.1, 2, 0, Size( min_width, min_height ), Size( max_width, max_height ) );
+			seekobject.detectMultiScale( frame_gray, faces, 1.1, 2, 0, cv::Size( min_width, min_height ), cv::Size( max_width, max_height ) );
 		}
 	}
 
@@ -957,8 +955,8 @@ int CV_lua::objects( lua_State *L ) {
 		buffer.push( faces[ i ].height );
 
 		if ( debug_image == true ) {
-			Point center( (int) ( faces[ i ].x + faces[ i ].width*0.5 ), (int) ( faces[ i ].y + faces[ i ].height*0.5 ) );
-			ellipse( src, center, Size( (int) ( faces[ i ].width*0.5 ), (int) ( faces[ i ].height*0.5 ) ), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
+			cv::Point center( (int) ( faces[ i ].x + faces[ i ].width*0.5 ), (int) ( faces[ i ].y + faces[ i ].height*0.5 ) );
+			ellipse( src, center, cv::Size( (int) ( faces[ i ].width*0.5 ), (int) ( faces[ i ].height*0.5 ) ), 0, 0, 360, cv::Scalar( 255, 0, 255 ), 4, 8, 0 );
 		}
 	}
 
@@ -967,9 +965,9 @@ int CV_lua::objects( lua_State *L ) {
 
 	//waitKey();
 	if ( debug_image ) {
-		namedWindow( "Micro Macro 2:cv_object", WINDOW_NORMAL );
+		cv::namedWindow( "Micro Macro 2:cv_object", cv::WINDOW_NORMAL );
 		imshow( "Micro Macro 2:cv_object", src );
-		waitKey( 0 );
+		cv::waitKey( 0 );
 	}
 	// avoid memory leak
 
@@ -989,7 +987,7 @@ int CV_lua::objects( lua_State *L ) {
 
 	if ( filter_flag == true ) {
 		filter_flag = false;
-		filter = Scalar( 0, 0, 0 );
+		filter = cv::Scalar( 0, 0, 0 );
 		filter.resize( 0 );
 	}
 	//push number of objects
@@ -1160,7 +1158,7 @@ int CV_lua::loadImage( lua_State *L ) {
 		wrongArgs( L );
 	checkType( L, LT_STRING, 1 );
 
-	filter = imread( lua_tostring( L, 1 ), 1 );
+	filter = cv::imread( lua_tostring( L, 1 ), 1 );
 
 	if ( !filter.data )
 		wrongArgs( L );
@@ -1186,9 +1184,9 @@ int CV_lua::setFilter( lua_State *L ) {
 		hwnd = GetDesktopWindow();
 	}
 
-	Mat src = hwnd2mat( hwnd );
+	cv::Mat src = hwnd2mat( hwnd );
 	//clear the old filter
-	filter = Scalar( 0, 0, 0 );
+	filter = cv::Scalar( 0, 0, 0 );
 
 	filter = src;
 	filter_flag = true;
@@ -1220,7 +1218,7 @@ int CV_lua::saveImage( lua_State *L ) {
 	imwrite( lua_tostring( L, 1 ), filter );
 	//clear filter buffer
 	filter_flag = false;
-	filter = Scalar::all( 0 );
+	filter = cv::Scalar::all( 0 );
 	filter.resize( 0 );
 
 	return 0;
@@ -1263,7 +1261,7 @@ int CV_lua::motions( lua_State *L ) {
 
 	HWND hwnd = (HWND) lua_tointeger( L, 1 );
 
-	Mat src;
+	cv::Mat src;
 
 	if ( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -1271,11 +1269,11 @@ int CV_lua::motions( lua_State *L ) {
 	src = hwnd2mat( hwnd );
 
 
-	Mat back;
-	Mat fore;
+	cv::Mat back;
+	cv::Mat fore;
 	//MOG2 Background subtractor
-	Ptr<BackgroundSubtractor> pMOG2;
-	vector<vector<Point> > contours;
+	cv::Ptr<cv::BackgroundSubtractor> pMOG2;
+	std::vector<std::vector<cv::Point> > contours;
 	int min_found = 3;
 	DWORD pause = 100;
 	int threshold = 16;
@@ -1300,7 +1298,7 @@ int CV_lua::motions( lua_State *L ) {
 		debug_image = (bool) lua_toboolean( L, 7 );
 
 	//create Background Subtractor objects
-	pMOG2 = createBackgroundSubtractorMOG2( history, threshold, shadows ); //MOG2 approach
+	pMOG2 = cv::createBackgroundSubtractorMOG2( history, threshold, shadows ); //MOG2 approach
 
 
 	int foundcounter = 0;
@@ -1315,7 +1313,7 @@ int CV_lua::motions( lua_State *L ) {
 		dilate( fore, fore, cv::Mat() );
 		//Earlier this was CHAIN_APPROX_NONE but for speeding up I removed all unnessary point
 		//with CHAIN_APPROX_SIMPLE
-		findContours( fore, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
+		findContours( fore, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE );
 
 		if ( contours.size() > 0 ) {
 			foundcounter = foundcounter + 1;
@@ -1333,7 +1331,7 @@ int CV_lua::motions( lua_State *L ) {
 	int centerx, centery, width, height = 0;
 	int min_x, max_x, min_y, max_y = 0;
 	int vcounter = 0;
-	vector<map<string, int>> vec_b( contours.size() );
+	std::vector<std::map<std::string, int>> vec_b( contours.size() );
 	for ( size_t i = 0; i < contours.size(); i++ ) {
 
 		centerx = 0;
@@ -1342,7 +1340,7 @@ int CV_lua::motions( lua_State *L ) {
 		min_y = 0;
 		max_x = 0;
 		max_y = 0;
-		vector<Point> vec = contours[ i ];
+		std::vector<cv::Point> vec = contours[ i ];
 		if ( vec.size() > 0 ) {
 
 			min_x = vec[ 0 ].x;
@@ -1350,7 +1348,7 @@ int CV_lua::motions( lua_State *L ) {
 
 		}
 		for ( size_t j = 0; j < vec.size(); j++ ) {
-			Point point = vec[ j ];
+			cv::Point point = vec[ j ];
 
 			centerx = centerx + point.x;
 			centery = centery + point.y;
@@ -1377,7 +1375,7 @@ int CV_lua::motions( lua_State *L ) {
 
 
 
-		map<string, int> map_t;
+		std::map<std::string, int> map_t;
 		//prepare for compare
 		map_t[ "centerx" ] = centerx;
 		map_t[ "centery" ] = centery;
@@ -1392,8 +1390,8 @@ int CV_lua::motions( lua_State *L ) {
 	for ( size_t i = 0; i < vec_b.size(); i++ ) {
 
 		for ( size_t j = 0; j < vec_b.size(); j++ ) {
-			map<string, int> k = vec_b[ j ];
-			map<string, int> l = vec_b[ i ];
+			std::map<std::string, int> k = vec_b[ j ];
+			std::map<std::string, int> l = vec_b[ i ];
 			if ( k != l ) {
 				//most awesome way to calculate the distance 
 				double dist = sqrt( pow( ( (float) k[ "centerx" ] - l[ "centerx" ] ), 2.0 ) + pow( ( (float) k[ "centery" ] - l[ "centery" ] ), 2.0 ) );
@@ -1441,7 +1439,7 @@ int CV_lua::motions( lua_State *L ) {
 					int newheight = top - bottom;
 					int newcenterx = ( k[ "centerx" ] + l[ "centerx" ] ) / 2;
 					int newcentery = ( k[ "centery" ] + l[ "centery" ] ) / 2;
-					map<string, int> map_t;
+					std::map<std::string, int> map_t;
 					map_t[ "centerx" ] = newcenterx;
 					map_t[ "centery" ] = newcentery;
 					map_t[ "width" ] = newwidth;
@@ -1472,9 +1470,9 @@ int CV_lua::motions( lua_State *L ) {
 
 	//waitKey();
 	if ( debug_image ) {
-		namedWindow( "Micro Macro 2:cv_motion", WINDOW_NORMAL );
+		cv::namedWindow( "Micro Macro 2:cv_motion", cv::WINDOW_NORMAL );
 		imshow( "Micro Macro 2:cv_motion", src );
-		waitKey( 0 );
+		cv::waitKey( 0 );
 	}
 	// avoid memory leak
 	vec_b.shrink_to_fit();
@@ -1523,7 +1521,7 @@ int CV_lua::motions2( lua_State *L ) {
 
 	HWND hwnd = (HWND) lua_tointeger( L, 1 );
 
-	Mat src;
+	cv::Mat src;
 
 	if ( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -1531,11 +1529,11 @@ int CV_lua::motions2( lua_State *L ) {
 	src = hwnd2mat( hwnd );
 
 
-	Mat back;
-	Mat fore;
+	cv::Mat back;
+	cv::Mat fore;
 	//MOG2 Background subtractor
-	Ptr<BackgroundSubtractor> pMOG2;
-	vector<vector<Point> > contours;
+	cv::Ptr<cv::BackgroundSubtractor> pMOG2;
+	std::vector<std::vector<cv::Point> > contours;
 	DWORD max_time = 500;
 	DWORD pause = 100;
 	int threshold = 16;
@@ -1561,7 +1559,7 @@ int CV_lua::motions2( lua_State *L ) {
 		debug_image = (bool) lua_toboolean( L, 7 );
 
 	//create Background Subtractor objects
-	pMOG2 = createBackgroundSubtractorMOG2( history, threshold, shadows ); //MOG2 approach
+	pMOG2 = cv::createBackgroundSubtractorMOG2( history, threshold, shadows ); //MOG2 approach
 
 	int foundcounter = 0;
 	DWORD starttime = GetTickCount();
@@ -1576,7 +1574,7 @@ int CV_lua::motions2( lua_State *L ) {
 		dilate( fore, fore, cv::Mat() );
 		//Earlier this was CHAIN_APPROX_NONE but for speeding up I removed all unnessary point
 		//with CHAIN_APPROX_SIMPLE
-		findContours( fore, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
+		findContours( fore, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE );
 
 		if ( contours.size() > 0 ) {
 			foundcounter = foundcounter + 1;
@@ -1597,7 +1595,7 @@ int CV_lua::motions2( lua_State *L ) {
 	int centerx, centery, width, height = 0;
 	int min_x, max_x, min_y, max_y = 0;
 	int vcounter = 0;
-	vector<map<string, int>> vec_b( contours.size() );
+	std::vector<std::map<std::string, int>> vec_b( contours.size() );
 
 	for ( size_t i = 0; i < contours.size(); i++ ) {
 
@@ -1607,7 +1605,7 @@ int CV_lua::motions2( lua_State *L ) {
 		min_y = 0;
 		max_x = 0;
 		max_y = 0;
-		vector<Point> vec = contours[ i ];
+		std::vector<cv::Point> vec = contours[ i ];
 		if ( vec.size() > 0 ) {
 
 			min_x = vec[ 0 ].x;
@@ -1615,7 +1613,7 @@ int CV_lua::motions2( lua_State *L ) {
 
 		}
 		for ( size_t j = 0; j < vec.size(); j++ ) {
-			Point point = vec[ j ];
+			cv::Point point = vec[ j ];
 
 			centerx = centerx + point.x;
 			centery = centery + point.y;
@@ -1641,7 +1639,7 @@ int CV_lua::motions2( lua_State *L ) {
 		centery = centery / (int) vec.size();
 
 
-		map<string, int> map_t;
+		std::map<std::string, int> map_t;
 		//prepare for compare
 		map_t[ "centerx" ] = centerx;
 		map_t[ "centery" ] = centery;
@@ -1658,8 +1656,8 @@ int CV_lua::motions2( lua_State *L ) {
 		for ( size_t i = 0; i < vec_b.size(); i++ ) {
 
 			for ( size_t j = 0; j < vec_b.size(); j++ ) {
-				map<string, int> k = vec_b[ j ];
-				map<string, int> l = vec_b[ i ];
+				std::map<std::string, int> k = vec_b[ j ];
+				std::map<std::string, int> l = vec_b[ i ];
 				if ( k != l ) {
 					// calculate the distance 
 					double dist = sqrt( pow( ( (float) k[ "centerx" ] - l[ "centerx" ] ), 2.0 ) + pow( ( (float) k[ "centery" ] - l[ "centery" ] ), 2.0 ) );
@@ -1707,7 +1705,7 @@ int CV_lua::motions2( lua_State *L ) {
 						int newheight = top - bottom;
 						int newcenterx = ( k[ "centerx" ] + l[ "centerx" ] ) / 2;
 						int newcentery = ( k[ "centery" ] + l[ "centery" ] ) / 2;
-						map<string, int> map_t;
+						std::map<std::string, int> map_t;
 						map_t[ "centerx" ] = newcenterx;
 						map_t[ "centery" ] = newcentery;
 						map_t[ "width" ] = newwidth;
@@ -1739,9 +1737,9 @@ int CV_lua::motions2( lua_State *L ) {
 
 	//waitKey();
 	if ( debug_image ) {
-		namedWindow( "Micro Macro 2:cv_motion", WINDOW_NORMAL );
+		cv::namedWindow( "Micro Macro 2:cv_motion", cv::WINDOW_NORMAL );
 		imshow( "Micro Macro 2:cv_motion", src );
-		waitKey( 0 );
+		cv::waitKey( 0 );
 	}
 	// avoid memory leak
 	vec_b.shrink_to_fit();
@@ -1847,7 +1845,7 @@ int CV_lua::getPixelSearch( lua_State *L ) {
 	HWND hwnd;
 	bool reversex;
 	bool reversey;
-	Mat local;
+	cv::Mat local;
 	bool found = false;
 
 	hwnd = (HWND) lua_tointeger( L, 1 );
@@ -1909,9 +1907,9 @@ int CV_lua::getPixelSearch( lua_State *L ) {
 	{
 		for ( int y = starty; y <= endy && y < local.rows ; y++ )
 		{
-			int b = local.at<Vec3b>( y, x )[ 0 ];
-			int g = local.at<Vec3b>( y, x )[ 1 ];
-			int r = local.at<Vec3b>( y, x )[ 2 ];
+			int b = local.at<cv::Vec3b>( y, x )[ 0 ];
+			int g = local.at<cv::Vec3b>( y, x )[ 1 ];
+			int r = local.at<cv::Vec3b>( y, x )[ 2 ];
 			
 			/*if ( local.at<Vec3b>( y, x ).channels > 3 ) {
 				a = local.at<Vec3b>( y, x )[ 3 ];
@@ -1994,7 +1992,7 @@ int CV_lua::getPixel( lua_State *L ) {
 	HWND hwnd = (HWND) lua_tointeger( L, 1 );
 	int x = (int) lua_tonumber( L, 2 );
 	int y = (int) lua_tonumber( L, 3 );
-	Mat local;
+	cv::Mat local;
 
 	if ( hwnd == 0 )
 		hwnd = GetDesktopWindow();
@@ -2009,12 +2007,12 @@ int CV_lua::getPixel( lua_State *L ) {
 	}
 	if ( y >= 0 && x >= 0 && y < local.rows && x < local.cols ) {
 		//values from filter
-		int b = local.at<Vec3b>( y, x )[ 0 ];
-		int g = local.at<Vec3b>( y, x )[ 1 ];
-		int r = local.at<Vec3b>( y, x )[ 2 ];
+		int b = local.at<cv::Vec3b>( y, x )[ 0 ];
+		int g = local.at<cv::Vec3b>( y, x )[ 1 ];
+		int r = local.at<cv::Vec3b>( y, x )[ 2 ];
 		int a = 0;
-		if ( local.at<Vec3b>( y, x ).channels > 3 ) {
-			a = local.at<Vec3b>( y, x )[ 3 ];
+		if ( local.at<cv::Vec3b>( y, x ).channels > 3 ) {
+			a = local.at<cv::Vec3b>( y, x )[ 3 ];
 		}
 		//push values
 		lua_pushinteger( L, r );
@@ -2048,7 +2046,7 @@ int CV_lua::setMaskFilter( lua_State *L ) {
 	//we are going through all tables
 	while ( tabIndex > 0 ) {
 		// a map for the values because I don't know in which order they come.
-		map<string, int> p0;
+		std::map<std::string, int> p0;
 		// Now iterate this table
 		lua_pushnil( L );
 

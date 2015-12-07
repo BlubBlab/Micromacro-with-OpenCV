@@ -12,8 +12,10 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <regex>
+#include <iterator>
 #include <sstream>
-#include <algorithm>
+//#include <algorithm>
 #include <string.h>
 #include <functional>
 #include "wininclude.h"
@@ -24,6 +26,8 @@ extern "C"
 	#include <lauxlib.h>
 	#include <lualib.h>
 }
+
+
 
 int String_addon::regmod(lua_State *L)
 {
@@ -40,6 +44,21 @@ int String_addon::regmod(lua_State *L)
 
 	lua_pushcfunction(L, String_addon::toUnicode);
 	lua_setfield(L, -2, "toUnicode");
+
+	lua_pushcfunction( L, String_addon::regexmatch );
+	lua_setfield( L, -2, "regex_match" );
+
+	lua_pushcfunction( L, String_addon::regexsearch );
+	lua_setfield( L, -2, "regex_search" );
+
+	lua_pushcfunction( L, String_addon::regexsearchall );
+	lua_setfield( L, -2, "regex_search_all" );
+
+	lua_pushcfunction( L, String_addon::regexreplace );
+	lua_setfield( L, -2, "regex_replace" );
+	
+	lua_pushcfunction( L, String_addon::regexreplaceall );
+	lua_setfield( L, -2, "regex_replace_all" );
 
 	lua_pop(L, 1); // Pop module off stack
 
@@ -170,4 +189,163 @@ int String_addon::toUnicode(lua_State *L)
 	lua_pushlstring(L, (char*)wStr.c_str(), wStr.size()*sizeof(wchar_t));
 
 	return 1;
+}
+/*	string.regex_match(string str, string regex)
+Returns:	string
+
+ Test if the value fits the regex
+ return true if it does and false if it doesn't
+*/
+int String_addon::regexmatch( lua_State *L ) 	
+{
+	if ( lua_gettop( L ) != 2 )
+		wrongArgs( L );
+	checkType( L, LT_STRING, 1 );
+	checkType( L, LT_STRING, 2 );
+	std::string string = (char *) lua_tostring( L, 1 );
+	std::string dummy = (char *) lua_tostring( L, 2 );
+	try {
+		std::regex reg( dummy );
+	
+	if ( std::regex_match( string, reg) ) {
+		lua_pushboolean(L, true );
+		return 1;
+	}
+	else
+	{
+		lua_pushboolean( L, false );
+		return 1;
+	}
+	}
+	catch ( std::regex_error& e ) {
+		return 0;
+	}
+}
+/*	string.regex_search(string str, string regex)
+Returns:	string
+
+Test if the value fits the regex
+return first the matching parts
+*/
+int String_addon::regexsearch( lua_State * L) {
+
+	if ( lua_gettop( L ) != 2 )
+		wrongArgs( L );
+	checkType( L, LT_STRING, 1 );
+	checkType( L, LT_STRING, 2 );
+	std::string string = (char *) lua_tostring( L, 1 );
+	std::string dummy = (char *) lua_tostring( L, 2 );
+	std::string result;
+	try {
+		std::regex reg( dummy );
+		std::smatch match;
+		if ( std::regex_search( string, match, reg ) && match.size() > 1 ) {
+			result = match.str( 1 );
+			char * re = const_cast < char * >(result.c_str());
+			lua_pushstring(L, re);
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+		
+	}
+	catch ( std::regex_error& e ) {
+		return 0;
+	}
+}
+/*	string.regex_search_all(string str, string regex)
+Returns:	string
+
+Test if the value fits the regex
+return all matching parts as multiple return values
+*/
+int String_addon::regexsearchall( lua_State * L) {
+
+	if ( lua_gettop( L ) != 2 )
+		wrongArgs( L );
+	checkType( L, LT_STRING, 1 );
+	checkType( L, LT_STRING, 2 );
+	std::string string = (char *) lua_tostring( L, 1 );
+	std::string dummy = (char *) lua_tostring( L, 2 );
+	std::string result;
+	int counter = 0;
+	try {
+		std::regex reg( dummy );
+		std::sregex_iterator next( string.begin(), string.end(), reg );
+		std::sregex_iterator end;
+		while ( next != end ) {
+			std::smatch match = *next;
+			 char * re = const_cast < char * >( match.str().c_str());
+			lua_pushstring( L,re  );
+			next++;
+			counter++;
+		}
+		return counter;
+	}
+	catch ( std::regex_error& e ) {
+		return 0;
+	}
+}
+/*	string.regex_replace_all(string str, string regex, string withwhat)
+Returns:	string
+
+replace all positions in which the regex match with given string
+and then return the string
+*/
+int String_addon::regexreplaceall( lua_State * L) {
+
+	if ( lua_gettop( L ) != 3 )
+		wrongArgs( L );
+	checkType( L, LT_STRING, 1 );
+	checkType( L, LT_STRING, 2 );
+	checkType( L, LT_STRING, 3 );
+	std::string string = (char *) lua_tostring( L, 1 );
+	std::string dummy = (char *) lua_tostring( L, 2 );
+	std::string what = (char *) lua_tostring( L, 3 );
+	std::string result;
+	try {
+		std::regex reg( dummy );
+		char * re = const_cast < char * >( std::regex_replace( string, reg, what ).c_str());
+		lua_pushstring(L,re);
+		return 1;
+	}
+	catch ( std::regex_error& e ) {
+		return 0;
+	}
+}
+/*	string.regex_replace(string str, string regex, string withwhat, int start, int ende)
+Returns:	string
+
+replace all positions in which the regex match with given string
+and then return the string
+*/
+int String_addon::regexreplace( lua_State * L ) {
+
+	if ( lua_gettop( L ) != 5 )
+		wrongArgs( L );
+	checkType( L, LT_STRING, 1 );
+	checkType( L, LT_STRING, 2 );
+	checkType( L, LT_STRING, 3 );
+	checkType( L, LT_NUMBER, 4 );
+	checkType( L, LT_NUMBER, 5 );
+	std::string string = (char *) lua_tostring( L, 1 );
+	std::string dummy = (char *) lua_tostring( L, 2 );
+	std::string what = (char *) lua_tostring( L, 3 );
+	int start = lua_tointeger( L, 4 ) + 1 ;//make it lua style c start from 0 and lua from 1 so +1
+	int ende = lua_tointeger( L, 5 ) + 1 ;
+	std::string result;
+	try {
+		std::regex reg( dummy );
+	
+		std::regex_replace( std::back_inserter( result ), string.begin(), string.end(), reg, what );
+		char * re = const_cast < char * >( result.c_str());
+		lua_pushstring( L , re );
+		
+		return 1;
+	}
+	catch ( std::regex_error& e ) {
+		return 0;
+	}
 }

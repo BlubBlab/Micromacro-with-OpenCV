@@ -5,7 +5,7 @@
 	License:	Modified BSD (see license.txt)
 ******************************************************************************/
 #define NETWORKING_ENABLED
-using namespace std;
+
 
 #ifndef TYPES_H
 #define TYPES_H

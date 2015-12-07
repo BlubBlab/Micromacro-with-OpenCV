@@ -1103,3 +1103,36 @@ int Window_lua::getFocusHwnd(lua_State *L)
 	lua_pushinteger(L, (size_t)Macro::instance()->getForegroundWindow());
 	return 1;
 }
+/*	window.saveScreenshot(number hwnd, string filename)
+Returns:	nil
+
+Save a screenshot of window 'hwnd' to 'filename'.
+If 'hwnd' is 0, this screenshots the whole desktop.
+*/
+//int Window_lua::setWindowTitle( lua_State *L ) {
+//
+//	if ( lua_gettop( L ) != 2 )
+//		wrongArgs( L );
+//	checkType( L, LT_NUMBER, 1 );
+//	checkType( L, LT_STRING, 2 );
+//	HWND hwnd = (HWND) lua_tointeger( L, 1 );
+//	const char *title = lua_tostring( L, 2 );
+//
+//	int success = true;
+//	// If setting the title for this window, use SetConsoleTitle instead
+//	if ( hwnd == Macro::instance()->getAppHwnd() )
+//		success = SetConsoleTitle( title );
+//	else
+//		success = (int) SendMessage( hwnd, WM_SETTEXT, (WPARAM) 0, (LPARAM) title );
+//	SetWindowText(
+//
+//	if ( !success )
+//	{ // Throw error
+//		int errCode = GetLastError();
+//		pushLuaErrorEvent( L, "Failure to set window title. Error code %i (%s)",
+//			errCode, getWindowsErrorString( errCode ).c_str() );
+//	}
+//
+//	lua_pushboolean( L, success );
+//	return 1;
+//}

@@ -3,6 +3,7 @@
 // Verwendet durch resource.rc
 //
 #define MANIFEST_RESOURCE_ID            1
+#define IDI_MY_ICON ICON "micromacro.ico"
 
 // Next default values for new objects
 // 

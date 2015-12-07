@@ -43,6 +43,8 @@
 			static int getAppHwnd(lua_State *);
 			static int getFocusHwnd(lua_State *);
 
+			static int setWindowTitle( lua_State * L );
+
 		public:
 			static int regmod(lua_State *);
 

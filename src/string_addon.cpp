@@ -46,19 +46,19 @@ int String_addon::regmod(lua_State *L)
 	lua_setfield(L, -2, "toUnicode");
 
 	lua_pushcfunction( L, String_addon::regexmatch );
-	lua_setfield( L, -2, "regex_match" );
+	lua_setfield( L, -2, "regexMatch" );
 
 	lua_pushcfunction( L, String_addon::regexsearch );
-	lua_setfield( L, -2, "regex_search" );
+	lua_setfield( L, -2, "regexSearch" );
 
 	lua_pushcfunction( L, String_addon::regexsearchall );
-	lua_setfield( L, -2, "regex_search_all" );
+	lua_setfield( L, -2, "regexSearchAll" );
 
 	lua_pushcfunction( L, String_addon::regexreplace );
-	lua_setfield( L, -2, "regex_replace" );
+	lua_setfield( L, -2, "regexReplace" );
 	
 	lua_pushcfunction( L, String_addon::regexreplaceall );
-	lua_setfield( L, -2, "regex_replace_all" );
+	lua_setfield( L, -2, "regexReplaceAll" );
 
 	lua_pop(L, 1); // Pop module off stack
 
@@ -190,7 +190,7 @@ int String_addon::toUnicode(lua_State *L)
 
 	return 1;
 }
-/*	string.regex_match(string str, string regex)
+/*	string.regexMatch(string str, string regex)
 Returns:	string
 
  Test if the value fits the regex
@@ -221,7 +221,7 @@ int String_addon::regexmatch( lua_State *L )
 		return 0;
 	}
 }
-/*	string.regex_search(string str, string regex)
+/*	string.regexSearch(string str, string regex)
 Returns:	string
 
 Test if the value fits the regex
@@ -255,7 +255,7 @@ int String_addon::regexsearch( lua_State * L) {
 		return 0;
 	}
 }
-/*	string.regex_search_all(string str, string regex)
+/*	string.regexSearchAll(string str, string regex)
 Returns:	string
 
 Test if the value fits the regex
@@ -288,7 +288,7 @@ int String_addon::regexsearchall( lua_State * L) {
 		return 0;
 	}
 }
-/*	string.regex_replace_all(string str, string regex, string withwhat)
+/*	string.regexReplaceAll(string str, string regex, string withwhat)
 Returns:	string
 
 replace all positions in which the regex match with given string
@@ -315,7 +315,7 @@ int String_addon::regexreplaceall( lua_State * L) {
 		return 0;
 	}
 }
-/*	string.regex_replace(string str, string regex, string withwhat, int start, int ende)
+/*	string.regexReplace(string str, string regex, string withwhat, int start, int ende)
 Returns:	string
 
 replace all positions in which the regex match with given string
@@ -332,15 +332,31 @@ int String_addon::regexreplace( lua_State * L ) {
 	checkType( L, LT_NUMBER, 5 );
 	std::string string = (char *) lua_tostring( L, 1 );
 	std::string dummy = (char *) lua_tostring( L, 2 );
-	std::string what = (char *) lua_tostring( L, 3 );
-	int start = lua_tointeger( L, 4 ) + 1 ;//make it lua style c start from 0 and lua from 1 so +1
-	int ende = lua_tointeger( L, 5 ) + 1 ;
-	std::string result;
+	std::string withwhat = (char *) lua_tostring( L, 3 );
+	int start = lua_tointeger( L, 4 ) - 1 ;//make it lua style c start from 0 and lua from 1 so +1
+	int ende = lua_tointeger( L, 5 ) - 1 ;
+	std::string result = "";
+	std::string left = "";
+	std::string middle = "";
+	std::string right = "";
+
+	
+	if ( start > 0 && start <= ende ) {
+		left = string.substr( 0, start - 1 );
+	}
+
+	if (start >= 0 && ende >= 0 && ende < (string.size()-1) && start <= ende)
+	{
+		right = string.substr( ende , (string.size()-1) );
+	}
+	if ( start >= 0 && ende >= 0 && start <= ende ) {
+		middle = string.substr( start, ende );
+	}
 	try {
 		std::regex reg( dummy );
 	
-		std::regex_replace( std::back_inserter( result ), string.begin(), string.end(), reg, what );
-		char * re = const_cast < char * >( result.c_str());
+		std::regex_replace( std::back_inserter( result ), middle.begin(), middle.end(), reg, withwhat );
+		const char * re = ( left + result + right ).c_str();
 		lua_pushstring( L , re );
 		
 		return 1;

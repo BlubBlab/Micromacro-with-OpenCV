@@ -90,7 +90,6 @@ int main(int argc, char **argv)			// See notes below
 	SetConsoleCtrlHandler(consoleControlCallback, true);
 	printStdHead(); // Intro text output
 
-	
 	// Extract MicroMacro's base path from argv[0]
 	GetFullPathName(argv[0], MAX_PATH, baseDirectory, NULL);
 	strlcpy(baseDirectory,

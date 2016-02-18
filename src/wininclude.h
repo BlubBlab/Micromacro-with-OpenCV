@@ -7,7 +7,7 @@
 
 #ifndef WININCLUDE_H
 #define WININCLUDE_H
-
+#define NOMINMAX
 	#ifndef WINVER
 		#define WINVER 0x0501
 	#endif

@@ -13,7 +13,7 @@
 	template <typename T>
 	T clamp(T value, T _min, T _max)
 	{
-		value = std::min(std::max(value, _min), _max);
+		value = (std::min(std::max(value, _min), _max));
 
 		return value;
 	}

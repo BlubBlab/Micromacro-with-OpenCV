@@ -28,6 +28,7 @@ extern "C"
 #include "AL/al.h"
 #include "AL/alc.h"
 #include "AL/alut.h"
+#include <sqlite3.h>
 
 namespace LuaType
 {

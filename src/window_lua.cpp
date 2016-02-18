@@ -13,7 +13,8 @@
 #include "macro.h"
 #include "luatypes.h"
 #include "types.h"
-#include "logger.h"
+//#include "logger.h"
+#include "mathl.h"
 
 extern "C"
 {
@@ -834,8 +835,12 @@ int Window_lua::pixelSearch(lua_State *L)
 	checkType(L, LT_NUMBER, 6); // y1
 	checkType(L, LT_NUMBER, 7); // x2
 	checkType(L, LT_NUMBER, 8); // y2
-	checkType(L, LT_NUMBER, 9); // accuracy
-	checkType(L, LT_NUMBER, 10); // step
+
+	if( top >= 9 )
+		checkType(L, LT_NUMBER, 9); // accuracy
+
+	if( top >= 10 )
+		checkType(L, LT_NUMBER, 10); // step
 
 	POINT retval;
 	POINT offset;

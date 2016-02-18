@@ -18,6 +18,7 @@
 	#include "event.h"
 	#include <stdint.h>
 
+	struct sqlite3;
 	namespace MicroMacro
 	{
 
@@ -81,6 +82,24 @@
 			size_t address;
 			size_t size;
 			char *data;
+		};
+
+		/* Holds SQLite3 database info */
+		struct SQLiteDb
+		{
+			sqlite3 *db;
+			bool opened;
+		};
+
+		struct SQLField
+		{
+			std::string name;
+			std::string value;
+		};
+
+		struct SQLResult
+		{
+			std::vector<SQLField> fields;
 		};
 
 		template <class T>

@@ -63,6 +63,8 @@ int Mutex::lock(int timeoutMsecs)
 	char errBuff[1024];
 	if( !handle )
 	{
+		return false;
+
 		slprintf(errBuff, sizeof(errBuff), "Cannot lock NULL Mutex\n");
 		fprintf(stderr, errBuff);
 		Logger::instance()->add(errBuff);

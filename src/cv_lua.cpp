@@ -128,7 +128,7 @@ cv::Mat hwnd2mat( HWND hwnd ) {
 						src.at<cv::Vec3b>( i, j )[ 0 ] = 0;
 						src.at<cv::Vec3b>( i, j )[ 1 ] = 0;
 						src.at<cv::Vec3b>( i, j )[ 2 ] = 0;
-						src.at<cv::Vec3b>( i, j )[ 3 ] = 0;
+						//src.at<cv::Vec3b>( i, j )[ 3 ] = 0;
 					}
 				}
 			}
@@ -1267,7 +1267,7 @@ int CV_lua::motions( lua_State *L ) {
 		hwnd = GetDesktopWindow();
 
 	src = hwnd2mat( hwnd );
-
+	
 
 	cv::Mat back;
 	cv::Mat fore;
@@ -1305,7 +1305,9 @@ int CV_lua::motions( lua_State *L ) {
 
 	while ( foundcounter < min_found ) {
 		src = hwnd2mat( hwnd );
-
+		if ( src.empty() ) {
+			break;
+		}
 		pMOG2->apply( src, fore );
 		//pMOG2->getBackgroundImage(back);
 
@@ -1566,7 +1568,9 @@ int CV_lua::motions2( lua_State *L ) {
 
 	while ( ( GetTickCount() - starttime ) <= max_time && !( foundcounter > breakpoint && contours.size() > 0 ) ) {
 		src = hwnd2mat( hwnd );
-
+		if ( src.empty() ) {
+			break;
+		}
 		pMOG2->apply( src, fore );
 		//pMOG2->getBackgroundImage(back);
 

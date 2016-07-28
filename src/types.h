@@ -153,11 +153,30 @@
 		#ifdef NETWORKING_ENABLED
 		struct Socket
 		{
+			Socket()
+			{
+				connected	=	false;
+				open		=	false;
+				deleteMe	=	false;
+				inLua		=	false;
+			}
+
+			~Socket()
+			{
+				connected	=	false;
+				open		=	false;
+				//deleteMe	=	true;
+				if( socket )
+					closesocket(socket);
+			}
+
 			SOCKET socket;
 			HANDLE hThread;
 			int protocol;
 			bool connected;
 			bool open;
+			bool deleteMe;
+			bool inLua;
 
 			std::queue<Event> eventQueue;
 			std::queue<std::string> recvQueue;

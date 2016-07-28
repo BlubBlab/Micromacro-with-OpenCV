@@ -228,7 +228,7 @@ int LuaEngine::init()
 		{ // Error occurred while loading module
 			const char *err = "One or more modules failed to load.\n";
 			fprintf(stderr, err);
-			Logger::instance()->add(err);
+			Logger::instance()->add("%s", err);
 			return regSuccess;
 		}
 		++i; // Next module
@@ -241,7 +241,7 @@ int LuaEngine::init()
 		{ // Error occurred while loading module
 			const char *err = "Failed to load audio module; disabling sound and moving on.\n";
 			fprintf(stderr, err);
-			Logger::instance()->add(err);
+			Logger::instance()->add("%s", err);
 			Macro::instance()->getSettings()->setInt(CONFVAR_AUDIO_ENABLED, 0);
 		}
 	}
@@ -293,15 +293,16 @@ int LuaEngine::cleanup()
 	if( Ncurses_lua::is_initialized() )
 		Ncurses_lua::cleanup(lstate);
 
-	#ifdef NETWORKING_ENABLED
-	Network_lua::cleanup();
-	#endif
-
 	Process_lua::cleanup(lstate);
 	Keyboard_lua::cleanup(lstate);
 
 	lua_close(lstate);
 	lstate = NULL;
+
+	#ifdef NETWORKING_ENABLED
+		// Run network cleanup *after* closing the Lua state (to ensure sockets aren't going to be hitting the GC during/after cleanup)
+		Network_lua::cleanup();
+	#endif
 
 	lastErrorMsg = ""; // No point holding onto this anymore.
 	return MicroMacro::ERR_OK;
@@ -596,10 +597,21 @@ int LuaEngine::runEvent(MicroMacro::Event &e)
 		#ifdef NETWORKING_ENABLED
 		case MicroMacro::EVENT_SOCKETCONNECTED:
 		{
+			// Ensure that the socket is still valid, if not then don't do anything
+			if( e.pSocket->socket == INVALID_SOCKET )
+			{
+				lua_pop(lstate, 2); // Pop stacktrace, macro table
+				return 0;
+			}
+
 			lua_pushstring(lstate, "socketconnected");
-			/*Socket *pSocket;
-			Socket **ppSocket = static_cast<Socket **>(lua_newuserdata(lstate, sizeof(struct Socket)));
-			*ppSocket = pSocket;*/
+
+			if( e.pSocket->mutex.lock(INFINITE, __FUNCTION__) )
+			{
+				e.pSocket->inLua	=	true;
+				e.pSocket->mutex.unlock(__FUNCTION__);
+			}
+
 			MicroMacro::Socket **ppSocket = static_cast<MicroMacro::Socket **>(lua_newuserdata(lstate, sizeof(struct MicroMacro::Socket)));
 			*ppSocket = e.pSocket;
 
@@ -607,7 +619,8 @@ int LuaEngine::runEvent(MicroMacro::Event &e)
 			luaL_getmetatable(lstate, LuaType::metatable_socket);
 			lua_setmetatable(lstate, -2);
 
-			nargs = 2;
+			lua_pushinteger(lstate, e.idata2);
+			nargs = 3;
 		}
 		break;
 		#endif

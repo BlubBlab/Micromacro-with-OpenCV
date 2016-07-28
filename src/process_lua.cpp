@@ -49,8 +49,8 @@ struct EnumFilterWindows
 
 
 /* These are mostly just helper functions and are not actually registered
-into the Lua state. They are, however, used by functions that are
-accessible by Lua.
+	into the Lua state. They are, however, used by functions that are
+	accessible by Lua.
 */
 int isWindows32()
 {
@@ -59,25 +59,25 @@ int isWindows32()
 
 int isWindows64()
 {
-#ifdef _WIN64
-	return true;
-#else
-	// If not already assigned, read it, then check again
-	if( !fnIsWow64Process )
-		fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+	#ifdef _WIN64
+		return true;
+	#else
+		// If not already assigned, read it, then check again
+		if( !fnIsWow64Process )
+			fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
 
-	if( !fnIsWow64Process ) // Function not found; assume 32-bit
-		return false;
+		if( !fnIsWow64Process ) // Function not found; assume 32-bit
+			return false;
 
-	BOOL iswow64;
-	bool success = fnIsWow64Process(GetCurrentProcess(), &iswow64);
+		BOOL iswow64;
+		bool success = fnIsWow64Process(GetCurrentProcess(), &iswow64);
 
-	if( !success )
-		Logger::instance()->add("Failed to call IsWow64Process() in %s. Error code: %d\n",
-		__FUNCTION__, GetLastError());
+		if( !success )
+			Logger::instance()->add("Failed to call IsWow64Process() in %s. Error code: %d\n",
+				__FUNCTION__, GetLastError());
 
-	return iswow64;
-#endif
+		return iswow64;
+	#endif
 }
 bool ReadPMemory(HANDLE process, LPCVOID curAddr, LPVOID buffer, SIZE_T  bufferLen, SIZE_T *bytesRead)
 {
@@ -133,8 +133,8 @@ static BOOL CALLBACK EnumFilterWindowsByProcIdProc(HWND hwnd,  LPARAM lParam)
 
 std::string Process_lua::narrowString(std::wstring instr)
 {
-	std::string holder(instr.begin(), instr.end());
-	return holder;
+  std::string holder(instr.begin(), instr.end());
+  return holder;
 }
 std::wstring Process_lua::charToWChar(std::string text)
 {
@@ -470,6 +470,7 @@ int Process_lua::regmod(lua_State *L)
 		{"findByWindow", Process_lua::findByWindow},
 		{"findByExe", Process_lua::findByExe},
 		{"getModuleAddress", Process_lua::getModuleAddress},
+		{"getModuleFilename", Process_lua::getModuleFilename},
 		{"getModules", Process_lua::getModules},
 		{"attachInput", Process_lua::attachInput},
 		{"detachInput", Process_lua::detachInput},
@@ -514,10 +515,10 @@ int Process_lua::cleanup(lua_State *)
 
 
 /*	process.open(number processId)
-Returns (on success):	userdata (handle)
-Returns (on failure):	nil
+	Returns (on success):	userdata (handle)
+	Returns (on failure):	nil
 
-Attempt to open a handle to a process for reading/writing.
+	Attempt to open a handle to a process for reading/writing.
 */
 int Process_lua::open(lua_State *L)
 {
@@ -538,21 +539,21 @@ int Process_lua::open(lua_State *L)
 	}
 
 	bool is32bit = true;
-#ifdef _WIN64
-	// We only make use of this when MicroMacro is compiled as 64-bit
-	if( fnIsWow64Process )
-	{
-		BOOL iswow64;
-		bool success = fnIsWow64Process(handle, &iswow64);
-		if( success )
+	#ifdef _WIN64
+		// We only make use of this when MicroMacro is compiled as 64-bit
+		if( fnIsWow64Process )
 		{
-			if( iswow64 || isWindows32() )
-				is32bit = true;
-			else
-				is32bit = false;
+			BOOL iswow64;
+			bool success = fnIsWow64Process(handle, &iswow64);
+			if( success )
+			{
+				if( iswow64 || isWindows32() )
+					is32bit = true;
+				else
+					is32bit = false;
+			}
 		}
-	}
-#endif
+	#endif
 
 	ProcHandle *pHandle = static_cast<ProcHandle *>(lua_newuserdata(L, sizeof(ProcHandle)));
 	luaL_getmetatable(L, LuaType::metatable_handle);
@@ -565,9 +566,9 @@ int Process_lua::open(lua_State *L)
 }
 
 /*	process.close(handle proc)
-Returns:	nil
+	Returns:	nil
 
-Closes an opened handle.
+	Closes an opened handle.
 */
 int Process_lua::close(lua_State *L)
 {
@@ -581,12 +582,12 @@ int Process_lua::close(lua_State *L)
 }
 
 /*	process.read(handle proc, string type, number address [, length])
-Returns (on success):	number|string
-Returns (on failure):	nil
+	Returns (on success):	number|string
+	Returns (on failure):	nil
 
-Attempt to read memory from process 'proc' at the given address.
-'type' should be "byte", "ubyte", "short", "ushort", etc.
-When reading a string, a maximum bytes to read should be given as 'length'.
+	Attempt to read memory from process 'proc' at the given address.
+	'type' should be "byte", "ubyte", "short", "ushort", etc.
+	When reading a string, a maximum bytes to read should be given as 'length'.
 */
 int Process_lua::read(lua_State *L)
 {
@@ -1069,6 +1070,7 @@ int Process_lua::readBatch(lua_State *L)
 		pushLuaErrorEvent(L, "Failure reading memory from 0x%p at 0x%p. "\
 			"Error code %i (%s)",
 			pHandle->handle, address, errCode, getWindowsErrorString(errCode).c_str());
+
 		return 0;
 	}
 
@@ -1254,11 +1256,11 @@ int Process_lua::readBatch(lua_State *L)
 }
 
 /*	process.readChunk(handle proc, number address, number size)
-Returns:	chunk (class)
+	Returns:	chunk (class)
 
-Read a chunk of memory.
+	Read a chunk of memory.
 
-Returns a chunk on success, nil on failure.
+	Returns a chunk on success, nil on failure.
 */
 int Process_lua::readChunk(lua_State *L)
 {
@@ -1300,13 +1302,13 @@ int Process_lua::readChunk(lua_State *L)
 }
 
 /*	process.write(handle proc, string type, number address, string|number data)
-Returns:	boolean
+	Returns:	boolean
 
-Attempt to write memory to process 'proc' at the given address.
-'type' does not need to indicate signedness. (do not includes 'u' prefix)
-Strings also do not require length to be given.
+	Attempt to write memory to process 'proc' at the given address.
+	'type' does not need to indicate signedness. (do not includes 'u' prefix)
+	Strings also do not require length to be given.
 
-Returns true on success, false on failure.
+	Returns true on success, false on failure.
 */
 int Process_lua::write(lua_State *L)
 {
@@ -1658,13 +1660,13 @@ int Process_lua::writePtr(lua_State *L)
 }
 
 /*	process.findPattern(handle proc, number address, number length, string bitmask, string szmask)
-Returns (on success):	number address
-Returns (on failure):	nil
+	Returns (on success):	number address
+	Returns (on failure):	nil
 
-Attempt to find a pattern within a process, beginning at memory address 'address',
-with a max scan length of 'length'.
-'bitmask' should contain an 'x' for a match, and '?' for wildcard.
-'szmask' should contain the actual data we are checking against for a match.
+	Attempt to find a pattern within a process, beginning at memory address 'address',
+	with a max scan length of 'length'.
+	'bitmask' should contain an 'x' for a match, and '?' for wildcard.
+	'szmask' should contain the actual data we are checking against for a match.
 */
 int Process_lua::findPattern(lua_State *L)
 {
@@ -1796,6 +1798,19 @@ int Process_lua::findByExe(lua_State *L)
 		return 0;
 	}
 
+
+	// Get the full path (if necessary)
+	bool comparePaths = false;
+	char *namePtr = (char *)name; // Just be careful to not try to edit the contents of this!
+	char fullPath[MAX_PATH+1];
+	const char *lookFor[] = {"/", "\\", NULL};
+	if( strcontains(name, lookFor) ) {
+		comparePaths = true;
+		GetFullPathName(name, MAX_PATH, fullPath, &namePtr);
+	}
+	else
+		strlcpy(fullPath, name, MAX_PATH);
+
 	DWORD foundProcId = 0;
 	DWORD proccount = bytesReturned / sizeof(DWORD);
 	for(size_t i = 0; i < proccount; i++)
@@ -1812,7 +1827,7 @@ int Process_lua::findByExe(lua_State *L)
 			int errCode = GetLastError();
 			if( errCode != ERROR_ACCESS_DENIED ) // Skip over processes we cannot access
 			{
-
+				continue;
 			}
 		}
 
@@ -1822,6 +1837,10 @@ int Process_lua::findByExe(lua_State *L)
 		success = EnumProcessModules(handle, &hModule, sizeof(HMODULE), &bytesReturned2);
 		if( success )
 			GetModuleBaseName(handle, hModule, szProcName, sizeof(szProcName)/sizeof(TCHAR));
+
+		// Grab the module's filename
+		char modPath[MAX_PATH];
+		DWORD retval = GetModuleFileNameEx(handle, NULL, modPath, MAX_PATH);
 
 		// Close handle now, we're done with this one
 		CloseHandle(handle);
@@ -1835,13 +1854,39 @@ int Process_lua::findByExe(lua_State *L)
 			found_lower = new char[foundLen+1];
 		} catch( std::bad_alloc &ba ) { badAllocation(); }
 
-		sztolower(name_lower, name, nameLen);
+		// 'name' could contain a full or partial path, so grab just the name section before compare
+		sztolower(name_lower, namePtr, nameLen);
 		sztolower(found_lower, szProcName, foundLen);
 		bool found = wildfind(name_lower, found_lower);
 
 		// Free memory
 		delete []name_lower;
 		delete []found_lower;
+
+		// If the names align, and a full path is set, compare paths!
+		if( comparePaths && found )
+		{
+			// Alloc some memory; we don't want to be forgetful
+			char *givenPath_lower = 0;
+			char *targetPath_lower = 0;
+			try {
+				givenPath_lower = new char[MAX_PATH+1];
+				targetPath_lower = new char[MAX_PATH+1];
+			} catch( std::bad_alloc &ba ) { badAllocation(); }
+
+			// Convert to lower
+			sztolower(givenPath_lower, getFilePath(fullPath, false).c_str(), MAX_PATH);
+			sztolower(targetPath_lower, getFilePath(modPath, false).c_str(), MAX_PATH);
+
+			// If the paths don't match, we must flip back to not found
+			if( strcmp(givenPath_lower, targetPath_lower) != 0 )
+				found = false;
+
+			// Free memory
+			delete []givenPath_lower;
+			delete []targetPath_lower;
+		}
+
 
 		if( found )
 		{ // We have a match
@@ -1858,11 +1903,11 @@ int Process_lua::findByExe(lua_State *L)
 }
 
 /*	process.getModuleAddress(number procId, string moduleName)
-Returns (on success):	number address
-Returns (on failure):	nil
+	Returns (on success):	number address
+	Returns (on failure):	nil
 
-Look up the address of a module within a process and return
-its origin address.
+	Look up the address of a module within a process and return
+	its origin address.
 */
 int Process_lua::getModuleAddress(lua_State *L)
 {
@@ -1881,11 +1926,11 @@ int Process_lua::getModuleAddress(lua_State *L)
 	} catch( std::bad_alloc &ba ) { badAllocation(); }
 	sztolower(modname_lower, modname, modnameLen);
 
-#ifdef _WIN64
-	DWORD cthFlags = TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32;
-#else
-	DWORD cthFlags = TH32CS_SNAPMODULE;
-#endif
+	#ifdef _WIN64
+		DWORD cthFlags = TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32;
+	#else
+		DWORD cthFlags = TH32CS_SNAPMODULE;
+	#endif
 
 	HANDLE snapshot = CreateToolhelp32Snapshot(cthFlags, procId);
 	if( snapshot == INVALID_HANDLE_VALUE )
@@ -1925,15 +1970,52 @@ int Process_lua::getModuleAddress(lua_State *L)
 
 	if( !found )
 		return 0;
-	lua_pushinteger(L, (lua_Unsigned)addrFound);
+	lua_pushinteger(L, addrFound);
+	return 1;
+}
+
+/*	process.getModuleFilename(handle process)
+	Returns (on success):	string filename
+	Returns (on failure):	nil
+
+	Returns the fully-qualified path of a running executable
+*/
+int Process_lua::getModuleFilename(lua_State *L)
+{
+	if( lua_gettop(L) != 1 )
+		wrongArgs(L);
+	checkType(L, LT_USERDATA, 1);
+
+	ProcHandle *pHandle = static_cast<ProcHandle *>(lua_touserdata(L, 1));
+	if( pHandle->handle == 0 )
+		luaL_error(L, szInvalidHandleError);
+
+	char *buffer = 0;
+	try {
+		buffer = new char[MAX_PATH + 1];
+	} catch( std::bad_alloc &ba ) { badAllocation(); }
+
+	DWORD retval = GetModuleFileNameEx(pHandle->handle, NULL, buffer, MAX_PATH);
+	if( retval == 0 )
+	{
+		int errCode = GetLastError();
+		pushLuaErrorEvent(L, "Failure getting module filename. Error code %i (%s)",
+			errCode, getWindowsErrorString(errCode).c_str());
+
+		delete []buffer;
+		return 0;
+	}
+
+	lua_pushstring(L, buffer);
+	delete []buffer;
 	return 1;
 }
 
 /*	process.getModules(number procId)
-Returns (on success):	table(name => address pairs)
-Returns (on failure):	nil
+	Returns (on success):	table(name => address pairs)
+	Returns (on failure):	nil
 
-Returns a list of all available modules in a process as key/value pairs.
+	Returns a list of all available modules in a process as key/value pairs.
 */
 int Process_lua::getModules(lua_State *L)
 {
@@ -1943,11 +2025,11 @@ int Process_lua::getModules(lua_State *L)
 
 	DWORD procId = (DWORD)lua_tointeger(L, 1);
 
-#ifdef _WIN64
-	DWORD cthFlags = TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32;
-#else
-	DWORD cthFlags = TH32CS_SNAPMODULE;
-#endif
+	#ifdef _WIN64
+		DWORD cthFlags = TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32;
+	#else
+		DWORD cthFlags = TH32CS_SNAPMODULE;
+	#endif
 
 	HANDLE snapshot = CreateToolhelp32Snapshot(cthFlags, procId);
 	if( snapshot == INVALID_HANDLE_VALUE )
@@ -1984,10 +2066,10 @@ int Process_lua::getModules(lua_State *L)
 
 
 /*	process.attachInput(number hwnd)
-Returns:	boolean
+	Returns:	boolean
 
-Attach our input thread to the target window.
-Returns true on success, false on failure.
+	Attach our input thread to the target window.
+	Returns true on success, false on failure.
 */
 int Process_lua::attachInput(lua_State *L)
 {
@@ -2015,10 +2097,10 @@ int Process_lua::attachInput(lua_State *L)
 }
 
 /*	process.detachInput(number hwnd)
-Returns:	boolean
+	Returns:	boolean
 
-Detach our input thread from the target window.
-Returns true on success, false on failure.
+	Detach our input thread from the target window.
+	Returns true on success, false on failure.
 */
 int Process_lua::detachInput(lua_State *L)
 {
@@ -2054,9 +2136,9 @@ int Process_lua::detachInput(lua_State *L)
 }
 
 /*	process.is32bit(handle proc)
-Returns:	boolean
+	Returns:	boolean
 
-Determines if the target process is 32 bit.
+	Determines if the target process is 32 bit.
 */
 int Process_lua::is32bit(lua_State *L)
 {
@@ -2079,7 +2161,7 @@ int Process_lua::is32bit(lua_State *L)
 
 	if( !success )
 		Logger::instance()->add("Failed to call IsWow64Process() in %s. Error code: %d\n",
-		__FUNCTION__, GetLastError());
+			__FUNCTION__, GetLastError());
 
 	if( iswow64 )
 	{	// 32 bit process, running under 64-bit Windows
@@ -2093,9 +2175,9 @@ int Process_lua::is32bit(lua_State *L)
 }
 
 /*	process.is64bit(handle proc)
-Returns:	boolean
+	Returns:	boolean
 
-Determines if the target process is 64 bit.
+	Determines if the target process is 64 bit.
 */
 int Process_lua::is64bit(lua_State *L)
 {
@@ -2119,7 +2201,7 @@ int Process_lua::is64bit(lua_State *L)
 
 	if( !success )
 		Logger::instance()->add("Failed to call IsWow64Process() in %s. Error code: %d\n",
-		__FUNCTION__, GetLastError());
+			__FUNCTION__, GetLastError());
 
 	if( iswow64 )
 	{	// 32 bit process, running under 64-bit Windows
@@ -2161,10 +2243,10 @@ int Process_lua::terminate(lua_State *L)
 }
 
 /*	process.getWindows(number procId)
-Returns:	table
+	Returns:	table
 
-Returns a table of all window handles belonging to the process.
-If this function fails, it will return nil.
+	Returns a table of all window handles belonging to the process.
+	If this function fails, it will return nil.
 */
 int Process_lua::getWindows(lua_State *L)
 {
@@ -2195,17 +2277,17 @@ int Process_lua::getWindows(lua_State *L)
 		GetClassName(efw.hwndList.at(i), (char*)&classstring, sizeof(classstring)-1);
 
 		lua_newtable(L); // Push value (table)
-		lua_pushstring(L, "hwnd");
-		lua_pushinteger(L, (lua_Integer)efw.hwndList.at(i));
-		lua_settable(L, -3);
+			lua_pushstring(L, "hwnd");
+			lua_pushinteger(L, (lua_Integer)efw.hwndList.at(i));
+			lua_settable(L, -3);
 
-		lua_pushstring(L, "name");
-		lua_pushstring(L, namestring);
-		lua_settable(L, -3);
+			lua_pushstring(L, "name");
+			lua_pushstring(L, namestring);
+			lua_settable(L, -3);
 
-		lua_pushstring(L, "class");
-		lua_pushstring(L, classstring);
-		lua_settable(L, -3);
+			lua_pushstring(L, "class");
+			lua_pushstring(L, classstring);
+			lua_settable(L, -3);
 		lua_settable(L, -3); // Set it
 	}
 

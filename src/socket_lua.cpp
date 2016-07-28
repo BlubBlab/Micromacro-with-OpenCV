@@ -59,14 +59,14 @@ DWORD WINAPI Socket_lua::socketThread(Socket *pSocket)
 			e.type = MicroMacro::EVENT_SOCKETRECEIVED;
 			e.msg = msg;
 
-			if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+			if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 			{
 				while( pSocket->recvQueue.size() > (maxRecvQueueSize + 1) )
 					pSocket->recvQueue.pop();
 
 				pSocket->eventQueue.push(e);
 				pSocket->recvQueue.push(msg);
-				pSocket->mutex.unlock();
+				pSocket->mutex.unlock(__FUNCTION__);
 			}
 		}
 		else if( result == 0 )
@@ -75,16 +75,16 @@ DWORD WINAPI Socket_lua::socketThread(Socket *pSocket)
 			e.idata1 = (int)pSocket->socket;
 			e.type = MicroMacro::EVENT_SOCKETDISCONNECTED;
 
-			if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+			if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 			{
 				pSocket->eventQueue.push(e);
-				pSocket->mutex.unlock();
+				pSocket->mutex.unlock(__FUNCTION__);
 			}
 			break;
 		}
 		else
 		{ // Error occurred
-			if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+			if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 			{
 				int errCode = WSAGetLastError();
 
@@ -98,10 +98,10 @@ DWORD WINAPI Socket_lua::socketThread(Socket *pSocket)
 						e.idata1 = (int)pSocket->socket;
 						e.type = MicroMacro::EVENT_SOCKETDISCONNECTED;
 
-						if( pSocket->open && pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+						if( pSocket->open )
 						{
 							pSocket->eventQueue.push(e);
-							pSocket->mutex.unlock();
+
 						}
 					}
 					break;
@@ -113,12 +113,9 @@ DWORD WINAPI Socket_lua::socketThread(Socket *pSocket)
 						e.idata2 = errCode;
 						e.type = MicroMacro::EVENT_SOCKETERROR;
 
-						if( pSocket->open && pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+						if( pSocket->open )
 						{
 							pSocket->eventQueue.push(e);
-							closesocket(pSocket->socket);
-							pSocket->connected = true;
-							pSocket->mutex.unlock();
 						}
 					}
 					break;
@@ -132,28 +129,38 @@ DWORD WINAPI Socket_lua::socketThread(Socket *pSocket)
 						e.idata1 = (int)pSocket->socket;
 						e.idata2 = errCode;
 						e.type = MicroMacro::EVENT_SOCKETERROR;
-						//Macro::instance()->pushEvent(e);
-						if( pSocket->open && pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+						if( pSocket->open )
 						{
 							pSocket->eventQueue.push(e);
-							pSocket->mutex.unlock();
 						}
 					}
 					break;
 				}
 
-				pSocket->socket = 0;
-				pSocket->open = false;
-				pSocket->hThread = NULL;
-				pSocket->connected = false;
-
-				pSocket->mutex.unlock();
+				//printf("Set delete flag for 0x%x (%d)\n", pSocket, pSocket->socket);
+				closesocket(pSocket->socket);
+				pSocket->open		=	false;
+				//pSocket->hThread	=	NULL;
+				pSocket->connected	=	false;
+				pSocket->socket		=	INVALID_SOCKET;
+				pSocket->mutex.unlock(__FUNCTION__);
 				break; // Break from while
 			} // End of: ( pSocket->mutex.lock() )
 		} // End of: else
 	} // End of while(true)
 
 	delete []readBuff;
+
+	if( pSocket->mutex.lock(INFINITE, __FUNCTION__) )
+	{
+		if( pSocket->socket != INVALID_SOCKET )
+			closesocket(pSocket->socket);
+		pSocket->socket		=	INVALID_SOCKET;
+		pSocket->hThread	=	NULL;
+		//pSocket->deleteMe	=	true;
+		pSocket->mutex.unlock(__FUNCTION__);
+	}
+
 	return 0;
 }
 
@@ -183,10 +190,10 @@ DWORD WINAPI Socket_lua::listenThread(Socket *pSocket)
 					e.idata1 = (int)pSocket->socket;
 					e.type = MicroMacro::EVENT_SOCKETDISCONNECTED;
 
-					if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+					if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 					{
 						pSocket->eventQueue.push(e);
-						pSocket->mutex.unlock();
+						pSocket->mutex.unlock(__FUNCTION__);
 					}
 				}
 				break;
@@ -198,12 +205,13 @@ DWORD WINAPI Socket_lua::listenThread(Socket *pSocket)
 					e.idata2 = errCode;
 					e.type = MicroMacro::EVENT_SOCKETERROR;
 
-					if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+					if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 					{
 						pSocket->eventQueue.push(e);
 						closesocket(pSocket->socket);
-						pSocket->connected = true;
-						pSocket->mutex.unlock();
+						pSocket->socket		=	INVALID_SOCKET;
+						pSocket->connected	=	true;
+						pSocket->mutex.unlock(__FUNCTION__);
 					}
 				}
 				break;
@@ -221,19 +229,19 @@ DWORD WINAPI Socket_lua::listenThread(Socket *pSocket)
 					e.idata2 = errCode;
 					e.type = MicroMacro::EVENT_SOCKETERROR;
 
-					if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+					if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 					{
 						pSocket->eventQueue.push(e);
-						pSocket->mutex.unlock();
+						pSocket->mutex.unlock(__FUNCTION__);
 					}
 				}
 				break;
 			}
 
-			pSocket->socket = 0;
-			pSocket->open = false;
-			pSocket->hThread = NULL;
-			pSocket->connected = false;
+			pSocket->socket		=	INVALID_SOCKET;
+			pSocket->open		=	false;
+			pSocket->hThread	=	NULL;
+			pSocket->connected	=	false;
 
 			break; // Break while(true)
 		}
@@ -243,25 +251,27 @@ DWORD WINAPI Socket_lua::listenThread(Socket *pSocket)
 
 			// Push the event
 			Event e;
-			e.type = MicroMacro::EVENT_SOCKETCONNECTED;
-			e.pSocket = npSocket;
+			e.type		=	MicroMacro::EVENT_SOCKETCONNECTED;
+			e.pSocket	=	npSocket;
+			e.idata2	=	pSocket->socket;
 			npSocket->eventQueue.push(e);
 
 			/* Now we can record some more info and start the new thread
 				Note: We don't need to mutex this because it cannot be accessed
 				until after we create the thread.
 			*/
-			npSocket->socket = new_socket;
-			npSocket->protocol = AF_INET;
-			npSocket->connected = true;
-			npSocket->open = true;
+			npSocket->socket	=	new_socket;
+			npSocket->protocol	=	AF_INET;
+			npSocket->connected	=	true;
+			npSocket->open		=	true;
+			npSocket->deleteMe	=	false;
 
 			npSocket->hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)socketThread, (PVOID)npSocket, 0, NULL);
 
-			if( socketListLock.lock() )
+			if( socketListLock.lock(INFINITE, __FUNCTION__) )
 			{
 				socketList.push_back(npSocket);
-				socketListLock.unlock();
+				socketListLock.unlock(__FUNCTION__);
 			}
 		}
 	} // End of: while(true)
@@ -286,6 +296,8 @@ int Socket_lua::regmod(lua_State *L)
 		{"getRecvQueueSize", getRecvQueueSize},
 		{"close", close},
 		{"id", id},
+		{"ip", ip},
+		{"remoteIp", remoteIp},
 		{NULL, NULL}
 	};
 
@@ -301,13 +313,13 @@ int Socket_lua::regmod(lua_State *L)
 
 int Socket_lua::cleanup()
 {
-	if( socketListLock.lock() )
+	if( socketListLock.lock(INFINITE, __FUNCTION__) )
 	{
 		// Step 1: Close the sockets; give the threads time to terminate; Do *not* delete yet!
 		for(SocketListIterator i = socketList.begin(); i != socketList.end(); ++i)
 		{
 			Socket *pSocket = *i;
-			if( pSocket->mutex.lock() )
+			if( pSocket->mutex.lock(INFINITE, __FUNCTION__) )
 			{
 				// Close the socket if needed
 				if( pSocket->open )
@@ -317,7 +329,7 @@ int Socket_lua::cleanup()
 				pSocket->open = false;
 				pSocket->connected = false;
 
-				pSocket->mutex.unlock(); // Let the thread do its part
+				pSocket->mutex.unlock(__FUNCTION__); // Let the thread do its part
 			}
 		}
 
@@ -325,17 +337,18 @@ int Socket_lua::cleanup()
 		while( !socketList.empty() )
 		{
 			Socket *pSocket = socketList.front();
-			if( pSocket->hThread )
-			{
+
+			if( (pSocket->inLua && !pSocket->deleteMe) || pSocket->hThread )
+			{ // Make sure we aren't trying to erase it before Lua has shut down
 				Sleep(1);
 				continue;
 			}
-
 			socketList.erase(socketList.begin());	// Erase from the list
 			delete pSocket;							// Free memory
+			pSocket = NULL;
 		}
 
-		socketListLock.unlock();
+		socketListLock.unlock(__FUNCTION__);
 	}
 
 	return MicroMacro::ERR_OK;
@@ -360,7 +373,7 @@ int Socket_lua::connect(lua_State *L)
 
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
 	const char *host = lua_tostring(L, 2);
-	int port = (int)lua_tointeger(L, 3);
+	int port = lua_tointeger(L, 3);
 
 	struct sockaddr_in server;
 	server.sin_family = AF_INET;
@@ -378,7 +391,7 @@ int Socket_lua::connect(lua_State *L)
 		server.sin_addr = *((LPIN_ADDR)*pHostent->h_addr_list);
 	}
 
-	if( !pSocket->mutex.lock() )
+	if( !pSocket->mutex.lock(INFINITE, __FUNCTION__) )
 	{
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "Could not lock socket mutex.");
@@ -387,7 +400,7 @@ int Socket_lua::connect(lua_State *L)
 
 	if( pSocket->connected || pSocket->open )
 	{ // Socket already in use; cannot do this.
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "Socket already connected; cannot open a new connection. Use a new socket.\n");
 		return 2;
@@ -398,7 +411,7 @@ int Socket_lua::connect(lua_State *L)
 
 	if( !success )
 	{
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 		char errbuff[2048];
 		slprintf(errbuff, sizeof(errbuff), "Connection failed. Err code %d\n", WSAGetLastError());
 		lua_pushboolean(L, false);
@@ -411,13 +424,13 @@ int Socket_lua::connect(lua_State *L)
 	pSocket->connected = true;
 	pSocket->open = true;
 
-	pSocket->mutex.unlock();
+	pSocket->mutex.unlock(__FUNCTION__);
 
 	// Lets make a record of it in our list
-	if( socketListLock.lock(DEFAULT_LOCK_TIMEOUT) )
+	if( socketListLock.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 	{
 		socketList.push_back(pSocket);
-		socketListLock.unlock();
+		socketListLock.unlock(__FUNCTION__);
 	}
 
 	lua_pushboolean(L, true);
@@ -456,7 +469,7 @@ int Socket_lua::listen(lua_State *L)
 		server.sin_addr = *((LPIN_ADDR)*pHostent->h_addr_list);
 	}
 
-	if( !pSocket->mutex.lock() )
+	if( !pSocket->mutex.lock(INFINITE, __FUNCTION__) )
 	{
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "Could not lock socket mutex.");
@@ -465,7 +478,7 @@ int Socket_lua::listen(lua_State *L)
 
 	if( pSocket->connected || pSocket->open )
 	{ // Socket already in use; cannot do this.
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "Socket already connected; cannot set to listen. Use a new socket.\n");
 		return 2;
@@ -475,7 +488,7 @@ int Socket_lua::listen(lua_State *L)
 
 	if( !success )
 	{
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 		char errbuff[2048];
 		slprintf(errbuff, sizeof(errbuff), "Bind failed. Err code %d\n", WSAGetLastError());
 		lua_pushboolean(L, false);
@@ -488,13 +501,13 @@ int Socket_lua::listen(lua_State *L)
 	pSocket->open = true;
 	pSocket->hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)listenThread, (PVOID)pSocket, 0, NULL);
 
-	pSocket->mutex.unlock();
+	pSocket->mutex.unlock(__FUNCTION__);
 
 	// Lets make a record of it in our list
-	if( socketListLock.lock(DEFAULT_LOCK_TIMEOUT) )
+	if( socketListLock.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 	{
 		socketList.push_back(pSocket);
-		socketListLock.unlock();
+		socketListLock.unlock(__FUNCTION__);
 	}
 
 	lua_pushboolean(L, true);
@@ -512,7 +525,7 @@ int Socket_lua::send(lua_State *L)
 	size_t len;
 	const char *msg = lua_tolstring(L, 2, &len);
 
-	if( !pSocket->mutex.lock() )
+	if( !pSocket->mutex.lock(INFINITE, __FUNCTION__) )
 	{
 		lua_pushboolean(L, false);
 		return 1;
@@ -520,15 +533,16 @@ int Socket_lua::send(lua_State *L)
 
 	if( !pSocket->connected || !pSocket->open )
 	{ // Cannot send on a closed socket.
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 		lua_pushboolean(L, false);
 		return 1;
 	}
 
-	int success = ::send(pSocket->socket, msg, (int)len, 0);
-	pSocket->mutex.unlock();
-	if( success < 0 )
+	int success = ::send(pSocket->socket, msg, len, 0);
+	pSocket->mutex.unlock(__FUNCTION__);
+	if( success == SOCKET_ERROR )
 	{
+		int errCode = WSAGetLastError();
 		lua_pushboolean(L, false);
 		return 1;
 	}
@@ -546,7 +560,7 @@ int Socket_lua::recv(lua_State *L)
 
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
 	int retVal = 0;
-	if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+	if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 	{
 		if( !pSocket->recvQueue.empty() )
 		{
@@ -555,7 +569,7 @@ int Socket_lua::recv(lua_State *L)
 			retVal = 1;
 		}
 
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 	}
 
 	return retVal;
@@ -569,11 +583,11 @@ int Socket_lua::flushRecvQueue(lua_State *L)
 	checkType(L, LT_USERDATA, 1);
 
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
-	if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+	if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 	{ // We use 'swap' instead of just popping elements for performance reasons
 		std::queue<std::string> emptyQueue;
 		swap(pSocket->recvQueue, emptyQueue);
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 	}
 	return 0;
 }
@@ -587,10 +601,10 @@ int Socket_lua::getRecvQueueSize(lua_State *L)
 
 	size_t size = 0;
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
-	if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT) )
+	if( pSocket->mutex.lock(DEFAULT_LOCK_TIMEOUT, __FUNCTION__) )
 	{
 		size = pSocket->recvQueue.size();
-		pSocket->mutex.unlock();
+		pSocket->mutex.unlock(__FUNCTION__);
 	}
 
 	lua_pushinteger(L, size);
@@ -599,8 +613,57 @@ int Socket_lua::getRecvQueueSize(lua_State *L)
 
 int Socket_lua::id(lua_State *L)
 {
+	int top = lua_gettop(L);
+	if( top != 1 )
+		wrongArgs(L);
+	checkType(L, LT_USERDATA, 1);
+
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
 	lua_pushinteger(L, pSocket->socket);
+	return 1;
+}
+
+int Socket_lua::ip(lua_State *L)
+{
+	int top = lua_gettop(L);
+	if( top != 1 )
+		wrongArgs(L);
+	checkType(L, LT_USERDATA, 1);
+
+	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
+
+	struct sockaddr_in name;
+	int	namelen	=	sizeof(name);
+	getsockname(pSocket->socket, (struct sockaddr *)&name, &namelen);
+
+	char buffer[128];
+	DWORD dwNamelen	=	sizeof(name);
+	DWORD outputLen	=	sizeof(buffer); // Initialize with our original buffer's size
+	WSAAddressToString((sockaddr*)&name, dwNamelen, NULL, buffer, &outputLen);
+
+	lua_pushstring(L, buffer);
+	return 1;
+}
+
+int Socket_lua::remoteIp(lua_State *L)
+{
+	int top = lua_gettop(L);
+	if( top != 1 )
+		wrongArgs(L);
+	checkType(L, LT_USERDATA, 1);
+
+	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
+
+	struct sockaddr_in name;
+	int	namelen	=	sizeof(name);
+	getpeername(pSocket->socket, (struct sockaddr *)&name, &namelen);
+
+	char buffer[128];
+	DWORD dwNamelen	=	sizeof(name);
+	DWORD outputLen	=	sizeof(buffer); // Initialize with our original buffer's size
+	WSAAddressToString((sockaddr*)&name, dwNamelen, NULL, buffer, &outputLen);
+
+	lua_pushstring(L, buffer);
 	return 1;
 }
 
@@ -611,12 +674,13 @@ int Socket_lua::close(lua_State *L)
 		wrongArgs(L);
 
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
-	if( pSocket->hThread && pSocket->open && pSocket->mutex.lock() )
+	if( pSocket->hThread && pSocket->open && pSocket->mutex.lock(INFINITE, __FUNCTION__) )
 	{
 		closesocket(pSocket->socket);
-		pSocket->connected = false;
-		pSocket->open = false;
-		pSocket->mutex.unlock();
+		pSocket->socket		=	INVALID_SOCKET;
+		pSocket->connected	=	false;
+		pSocket->open		=	false;
+		pSocket->mutex.unlock(__FUNCTION__);
 	}
 
 
@@ -627,34 +691,14 @@ int Socket_lua::gc(lua_State *L)
 {
 	Socket *pSocket = *static_cast<Socket **>(lua_touserdata(L, 1));
 
-	if( socketListLock.lock() )
+	// Mark the socket for deletion.
+	if( pSocket->mutex.lock(INFINITE, __FUNCTION__) )
 	{
-		/* Iterate through the list and erase the socket */
-		for(SocketListIterator i = socketList.begin(); i != socketList.end(); ++i)
-		{
-			if( *i == pSocket )
-			{
-				if( pSocket->hThread )
-					close(L); // We only need to close() it if our thread is alive
+		if( pSocket->hThread )
+			close(L); // We only need to close() it if our thread is alive
 
-				socketList.erase(i);
-				if( pSocket->mutex.lock() )
-				{
-					pSocket->connected = false;
-					pSocket->open = false;
-
-					if( pSocket->hThread )
-						pSocket->mutex.unlock(); // The thread will delete it for us.
-					else
-						delete pSocket; // Release it here, before it is born.
-
-					pSocket = NULL;
-				}
-
-				break;
-			}
-		}
-		socketListLock.unlock();
+		pSocket->deleteMe	=	true;
+		pSocket->mutex.unlock(__FUNCTION__);
 	}
 
 	return 0;

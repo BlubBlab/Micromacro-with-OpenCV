@@ -45,6 +45,9 @@ int String_addon::regmod(lua_State *L)
 	lua_pushcfunction(L, String_addon::toUnicode);
 	lua_setfield(L, -2, "toUnicode");
 
+	lua_pushcfunction(L, String_addon::likeness);
+	lua_setfield(L, -2, "likeness");
+
 	lua_pushcfunction( L, String_addon::regexmatch );
 	lua_setfield( L, -2, "regexMatch" );
 
@@ -84,20 +87,55 @@ int String_addon::explode(lua_State *L)
 	lua_newtable(L);
 	size_t key = 1;
 	while(true)
-	{
-		std::size_t found = str.find(delim);
-
-		// Push the string.
-		lua_pushinteger(L, key); // Key
-		lua_pushstring(L, str.substr(0, found).c_str()); // Value
-		str = str.substr(found+delimLen); // Set it
-		lua_settable(L, -3);
-		++key;
+		if( str.size() > 0 )
+		{
+			// Push the string.
+			lua_pushinteger(L, key); // Key
+			lua_pushstring(L, str.substr(0, found).c_str()); // Value
+			str = str.substr(found+delimLen); // Set it
+			lua_settable(L, -3);
+			++key;
+		}
 
 		if( found == std::string::npos )
 			break;
 	}
 
+	return 1;
+}
+
+/*	string.implode(table str, string glue)
+	Returns:	table
+
+	Does the opposite of explode; joins a table of values
+	together by separating values with 'glue'
+*/
+int String_addon::implode(lua_State *L)
+{
+	if( lua_gettop(L) != 2 )
+		wrongArgs(L);
+	checkType(L, LT_TABLE, 1);
+	checkType(L, LT_STRING, 2);
+
+	const char *glue = lua_tostring(L, 2);
+	std::string holder = "";
+	lua_pushnil(L);
+	bool first = true;
+	while( lua_next(L, 1) )
+	{
+		if( first )
+			first = false;
+		else
+			holder += glue;
+
+		if( lua_isstring(L, -1) ) {
+			const char *nextString = lua_tostring(L, -1);
+			holder += nextString; }
+
+		lua_pop(L, 1); // So we can next
+	}
+
+	lua_pushstring(L, holder.c_str());
 	return 1;
 }
 
@@ -190,6 +228,66 @@ int String_addon::toUnicode(lua_State *L)
 
 	return 1;
 }
+*	string.likeness(string str1, string str2)
+	Returns:	number
+
+	Returns the percentage detailing how alike two strings are.
+	This implementation uses the Levenshtein distance.
+*/
+#ifndef MIN3
+	#define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+#endif
+int String_addon::likeness(lua_State *L)
+{
+	if( lua_gettop(L) != 2 )
+		wrongArgs(L);
+
+	size_t len1;
+	size_t len2;
+	char *str1 = (char *)lua_tolstring(L, 1, &len1);
+	char *str2 = (char *)lua_tolstring(L, 2, &len2);
+
+	size_t largestLen = std::max(len1, len2);
+	float percent;
+	int differences;
+
+	if( largestLen == 0 )
+	{ // Both empty
+		percent		=	100.0;
+		differences =	0;
+	}
+	else
+	{
+		// Build out a matrix of differences
+		// This is heavily based on the code found here:
+		// https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C.2B.2B
+		unsigned int column[len1+1];
+		unsigned int x, y, lastdiag, olddiag;
+		for(y = 1; y <= len1; y++)
+			column[y] = y;
+		for(x = 1; x <= len2; x++)
+		{
+			column[0] = x;
+			for(y = 1, lastdiag = x - 1; y <= len1; y++)
+			{
+				olddiag		=	column[y];
+				column[y]	=	MIN3(column[y] + 1, column[y-1] + 1, lastdiag + (str1[y-1] == str2[x-1] ? 0 : 1));
+				lastdiag	=	olddiag;
+			}
+		}
+
+		// Now we can compute how different the strings are
+		differences	=	column[len1];
+		percent		=	float(largestLen-differences)/largestLen * 100;
+	}
+
+	lua_pushnumber(L,	percent);
+	lua_pushinteger(L,	differences);
+	return 2;
+}
+
+
+
 /*	string.regexMatch(string str, string regex)
 Returns:	string
 

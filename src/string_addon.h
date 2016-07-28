@@ -15,9 +15,11 @@
 	{
 		protected:
 			static int explode(lua_State *);
+			static int implode(lua_State *);
 			static int trim(lua_State *);
 			static int random(lua_State *);
 			static int toUnicode(lua_State *);
+			static int likeness(lua_State *);
 			static int regexmatch( lua_State * );
 			static int regexsearch( lua_State * );
 			static int regexsearchall( lua_State * );
